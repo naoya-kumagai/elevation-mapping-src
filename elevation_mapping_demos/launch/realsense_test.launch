@@ -31,7 +31,7 @@
         <arg name="rviz" value="true"/>
     </include>
 
-<!--
+
     <include file="$(find robot_localization)/launch/ukf_template.launch"/>
     <param name="/ukf_se/frequency" value="300"/>
     <param name="/ukf_se/base_link_frame" value="camera_link"/>
@@ -57,12 +57,12 @@
     <param name="/ukf_se/use_control" value="false"/>
     
     
--->
+
     <!-- <param name="/ukf_se/odom0_config" value="{true,true,true,}"/> -->
     
   <!-- Publish tf 'base_footprint' as pose.-->
-  <node pkg="elevation_mapping_demos" type="odom_to_pose_publisher.py" name="waffle_pose_publisher" output="screen">
-  </node>
+  <!--<node pkg="elevation_mapping_demos" type="odom_to_pose_publisher.py" name="waffle_pose_publisher" output="screen"/>-->
+  
   
       <!-- RANSAC plane detection node -->
   <!--<node pkg="lidar_basic" type="process_lidar" name="plane_detection" output="screen"/>-->

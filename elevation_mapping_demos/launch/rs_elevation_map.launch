@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+    <!-- 
+          NOTICE: Installation of rtabmap is required for using this launch file:
+                  For installation type:
+                        apt-get install ros-kinetic-rtabmap-ros
+    -->
+    <arg name="device_type_camera1"    		default="t265"/>
+    <arg name="device_type_camera2"    		default="d4.5"/>	<!-- Note: using regular expression. match D435, D435i, D415... -->
+    <arg name="serial_no_camera1"    			default="133122110783"/>
+    <arg name="serial_no_camera2"    			default="116622071599"/>
+    <arg name="camera1"              			default="cam_tracking"/>		<!-- Note: Replace with camera name -->
+    <arg name="camera2"              			default="cam_depth"/>		<!-- Note: Replace with camera name -->
+    <arg name="clip_distance"             default="-2"/>
+    <arg name="use_rviz"                  default="true"/>
+    
+
+    <include file="$(find realsense2_camera)/launch/rs_d400_and_t265.launch">
+            <arg name="device_type_camera1"             value="$(arg device_type_camera1)"/>
+            <arg name="device_type_camera2"             value="$(arg device_type_camera2)"/>
+            <arg name="serial_no_camera1"               value="$(arg serial_no_camera1)"/>
+            <arg name="serial_no_camera2"               value="$(arg serial_no_camera2)"/>
+            <arg name="camera1"                         value="$(arg camera1)"/>
+            <arg name="camera2"                         value="$(arg camera2)"/>
+            <arg name="clip_distance"                   value="$(arg clip_distance)"/>
+            
+    </include>
+
+<node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/> 
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0  /map /$(arg camera1)_odom_frame 100"/> 
+
+  <!-- Launch elevation mapping node. -->
+  <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping" output="screen">
+    <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/realsense_combined.yaml" />       
+  </node>  
+  
+  <node pkg="elevation_mapping" type="sub.py" name="listener" output="screen" />
+  
+</launch>

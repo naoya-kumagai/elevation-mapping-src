@@ -2,7 +2,6 @@
 
 <launch>
 
-
 <arg name="offline"          default="false"/>
 
 
@@ -29,10 +28,16 @@
      <arg name="serial_no" value="133122110783"/>
      <arg name="camera" value="cam_tracking"/>
      </include>
-        
-  <node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="pose_publisher" output="screen">
-  </node>
-  
+     
+  <node pkg="tf" type="static_transform_publisher" name="t265_to_d400" args="0.009 0.021 0.027 0.000 -0.018 0.005 /cam_tracking_pose_frame /cam_depth_link 100"/> 
+   <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_t265" args="0 0 0 0 0 0 /map /cam_tracking_pose_frame  100"/>    -->
+     
+ <!--<node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/>      
+  <node pkg="elevation_mapping_demos" type="t265_d435_tf.py" name="t265_d435" output="screen"/>
+  <node pkg="elevation_mapping_demos" type="camera_tf.py" name="camera_tf" output="screen"/>
+  <node pkg="elevation_mapping_demos" type="odom_d435_tf.py" name="odom_d435_tf" output="screen"/>
+  <node pkg="elevation_mapping_demos" type="odom_to_tracking_cam_pose.py" name="odom_to_tracking_cam_pose" output="screen"/>-->
+
         
         
   <!-- Launch elevation mapping node. -->

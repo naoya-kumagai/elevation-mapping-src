@@ -1,0 +1,18 @@
+digraph G {
+"cam_depth_link" -> "cam_depth_depth_frame"[label="Broadcaster: /cam_depth/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_tracking_link" -> "cam_depth_link"[label="Broadcaster: /tf_broadcaster\nAverage rate: 202.188 Hz\nMost recent transform: 1633903116.652 ( 0.043 sec old)\nBuffer length: 4.941 sec\n"];
+"cam_depth_depth_frame" -> "cam_depth_depth_optical_frame"[label="Broadcaster: /cam_depth/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_depth_link" -> "cam_depth_color_frame"[label="Broadcaster: /cam_depth/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_depth_aligned_depth_to_color_frame" -> "cam_depth_color_optical_frame"[label="Broadcaster: /cam_depth/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_depth_link" -> "cam_depth_aligned_depth_to_color_frame"[label="Broadcaster: /cam_depth/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_tracking_link" -> "cam_tracking_gyro_frame"[label="Broadcaster: /cam_tracking/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_tracking_pose_frame" -> "cam_tracking_link"[label="Broadcaster: /cam_tracking/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_tracking_gyro_frame" -> "cam_tracking_gyro_optical_frame"[label="Broadcaster: /cam_tracking/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_tracking_link" -> "cam_tracking_accel_frame"[label="Broadcaster: /cam_tracking/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_tracking_accel_frame" -> "cam_tracking_accel_optical_frame"[label="Broadcaster: /cam_tracking/realsense2_camera_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1633903116.695 sec old)\nBuffer length: 0.000 sec\n"];
+"cam_tracking_odom_frame" -> "cam_tracking_pose_frame"[label="Broadcaster: /cam_tracking/realsense2_camera_manager\nAverage rate: 200.581 Hz\nMost recent transform: 1633903116.689 ( 0.006 sec old)\nBuffer length: 4.991 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1633903116.695"[ shape=plaintext ] ;
+ }->"cam_tracking_odom_frame";
+}

@@ -1,10 +1,10 @@
 # Robot. 
-map_frame_id:                               odom
-robot_base_frame_id:                        camera_tracking_link
+map_frame_id:                               map #odom?
+robot_base_frame_id:                        cam_tracking_link
 robot_pose_with_covariance_topic:           /camera_footprint_pose
 robot_pose_cache_size:                      200
 point_cloud_topic:                          /cam_depth/depth/color/points #/filtered_points #/camera/depth/color/points 
-track_point_frame_id:                       camera_tracking_link  #this defines how the elevation map moves
+track_point_frame_id:                       cam_tracking_link  #this defines how the elevation map moves
 track_point_x:                              0.0
 track_point_y:                              0.0
 track_point_z:                              0.0

@@ -1,0 +1,25 @@
+postprocessor_pipeline: # set by postprocessor_pipeline_name
+
+  # Reduce noise with a radial blurring filter.
+  - name: mean_in_radius
+    type: gridMapFilters/MeanInRadiusFilter
+    params:
+      input_layer: elevation
+      output_layer: elevation_smooth
+      radius: 0.02
+      
+        # Compute surface normals.
+  - name: surface_normals
+    type: gridMapFilters/NormalVectorsFilter
+    params:
+      input_layer: elevation_smooth
+      output_layers_prefix: normal_vectors_
+      radius: 0.02
+      normal_vector_positive_axis: z
+
+  # Add a color layer for visualization based on the surface normal.
+  - name: normal_color_map
+    type: gridMapFilters/NormalColorMapFilter
+    params:
+      input_layers_prefix: normal_vectors_
+      output_layer: normal_color

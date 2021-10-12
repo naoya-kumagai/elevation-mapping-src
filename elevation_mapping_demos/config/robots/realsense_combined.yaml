@@ -30,11 +30,11 @@ enable_visibility_cleanup:                  false
 visibility_cleanup_rate:                    1.0
 scanning_duration:                          1.0
 
-# Init submap
+# Init submap #currently not used
 initialize_elevation_map:                   false
 initialization_method:                      0
 length_in_x_init_submap:                    1.0
 length_in_y_init_submap:                    1.0
 margin_init_submap:                         0.3
 init_submap_height_offset:                  0.01
-target_frame_init_submap:                   camera_link
+target_frame_init_submap:                   cam_tracking_link

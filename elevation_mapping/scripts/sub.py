@@ -6,7 +6,7 @@ from std_msgs.msg import String
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-import warnings
+# import warnings
 
 def wrap_in_size(size_x,size_y,ind_x,ind_y):
 	if ind_x<0:
@@ -50,7 +50,7 @@ class listener(object):
 		self.surface_normals_z = None
 		rospy.init_node('listeneer', anonymous=True)
 		#rospy.Subscriber("/grid_map_filter_demo/filtered_map", GridMap, self.callback)		
-		rospy.Subscriber("/elevation_mapping/elevation_map", GridMap, self.callback)		
+		rospy.Subscriber("/elevation_mapping/elevation_map_raw", GridMap, self.callback)		
 		#rospy.Subscriber("/elevation_mapping_plane/elevation_map", GridMap, self.callback_plane)	
 	#update the height map and the surface_normals
 	def callback(self,gmdata):
@@ -72,6 +72,12 @@ class listener(object):
 		d = gmdata.data
 		#print(len(d))
 		self.height_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[0])
+		for i in range(10):
+			try: 
+				translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[i])
+			except:
+				print(f'error at index {i}') 
+		print(type(d[0].name))
 
 		#self.surface_normals_x = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[11])
 		#self.surface_normals_y = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[12])
@@ -116,7 +122,7 @@ class listener(object):
 
 if __name__ == '__main__':
 
-	warnings.filterwarnings("error")
+	# warnings.filterwarnings("error")
 	my_listener = listener() #the height map would be a top-down view
 
 	fig = plt.figure(figsize=(4,8))

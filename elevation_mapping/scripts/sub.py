@@ -42,43 +42,42 @@ class listener(object):
 		self.resolution = None
 		self.length_x = None
 		self.length_y = None
-		self.height_map = None
-		self.height_map_plane = None
+		self.height_map = None #2D numpy array
+		self.color_map = None
+		# self.height_map_plane = None
 
 		self.surface_normals_x = None
 		self.surface_normals_y = None
 		self.surface_normals_z = None
 		rospy.init_node('listeneer', anonymous=True)
 		#rospy.Subscriber("/grid_map_filter_demo/filtered_map", GridMap, self.callback)		
-		rospy.Subscriber("/elevation_mapping/elevation_map_raw", GridMap, self.callback)		
+		rospy.Subscriber("/elevation_mapping/elevation_map", GridMap, self.callback)		
 		#rospy.Subscriber("/elevation_mapping_plane/elevation_map", GridMap, self.callback_plane)	
 	#update the height map and the surface_normals
 	def callback(self,gmdata):
-		"""
-		print(gmdata.info)
-		print("++++++++++++++++")
-		print(gmdata.layers)
-		print("---------------")
-		print(len(gmdata.layers))
-		print(gmdata.layers[11])
-		print(gmdata.layers[12])
-		print(gmdata.layers[13])
-		"""
 		#print("entered visualization callback")
+		# print(gmdata.info)
+		# print("++++++++++++++++")
+		# print(gmdata.layers)
+		# print("---------------")
+		# print(len(gmdata.layers))
+		# print(gmdata.layers[11])
+		# print(gmdata.layers[12])
+		# print(gmdata.layers[13])
+		idx_elevation = gmdata.layers.index('elevation') 
+		idx_color = gmdata.layers.index('color')
+		
+
 		self.robot_pose = gmdata.info.pose
 		self.resolution = gmdata.info.resolution
 		self.length_x = gmdata.info.length_x
 		self.length_y = gmdata.info.length_y
 		d = gmdata.data
 		#print(len(d))
-		self.height_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[0])
-		for i in range(10):
-			try: 
-				translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[i])
-			except:
-				print(f'error at index {i}') 
-		print(type(d[0].name))
-
+		self.height_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_elevation])
+		#print(self.height_map.shape)
+		self.color_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_color])
+	
 		#self.surface_normals_x = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[11])
 		#self.surface_normals_y = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[12])
 		#self.surface_normals_z = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[13])
@@ -157,10 +156,11 @@ if __name__ == '__main__':
 
 
 
-			# np.save("/home/yusuke/height_map.npy", my_listener.height_map)
+			np.save("/home/yusuke/height_map.npy", my_listener.height_map)
 			# np.save("/home/yusuke/height_map_plane.npy", my_listener.height_map_plane)
-			# print('saved npy file')
+			print('saved npy file')
 			
+			# cax = plt.matshow(my_listener.height_map, fignum=0)
 			cax = plt.matshow(my_listener.height_map, fignum=0)
 			fig.colorbar(cax)
 			plt.pause(0.001)

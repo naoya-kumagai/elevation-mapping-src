@@ -36,8 +36,10 @@
   </node>
   
     <!-- RANSAC plane detection node -->
-  <node pkg="lidar_basic" type="process_lidar" name="plane_detection" output="screen"/>
-  
+  <node pkg="lidar_basic" type="process_lidar" name="plane_detection" output="screen">
+  	<param name="input_pointcloud"  type="str" value="/camera/depth/points"/>
+	<param name="output_pointcloud" type="str" value="/filtered_points"/>
+  </node>
 <!--
 <node pkg="roboclimb" type="roboclimb_node" name="ransac_node" output="screen"/>
 -->
@@ -45,6 +47,7 @@
   <!-- Launch elevation mapping node. -->
   
   <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping" output="screen">
+    <param name="point_cloud_topic" value="/filtered_points"/>
     <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/waffle_robot.yaml" />
     <rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/perfect.yaml" />
     <!--<rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/realsense_d435.yaml" />-->

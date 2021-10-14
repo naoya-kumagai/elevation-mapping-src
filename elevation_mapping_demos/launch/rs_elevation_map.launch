@@ -9,7 +9,7 @@
     <arg name="camera1"              			default="cam_tracking"/>		
     <arg name="camera2"              			default="cam_depth"/>		
     <arg name="clip_distance"                         default="3.0"/>
-    
+
 
     <include file="$(find realsense2_camera)/launch/rs_d400_and_t265.launch">
             <arg name="device_type_camera1"             value="$(arg device_type_camera1)"/>
@@ -22,11 +22,25 @@
             
     </include>
 
-<node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/> 
+  <node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/> 
   <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0  /map /$(arg camera1)_odom_frame 100"/> 
+
+
+    <!-- RANSAC plane detection node -->
+
+	  <node pkg="lidar_basic" type="process_lidar" name="plane_detection" output="screen">
+	  	<param name="input_pointcloud" value="/$(arg camera2)/depth/color/points"/>
+		<param name="output_pointcloud" value="/filtered_points"/>\
+	  </node>
+
+	
 
   <!-- Launch elevation mapping node. -->
   <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping" output="screen">
+
+    <param name="point_cloud_topic" value="/filtered_points"/>
+    <!--<param name="point_cloud_topic" value="/$(arg camera2)/depth/color/points"/>-->
+    
     <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/realsense_combined.yaml" />  
     <rosparam command="load" file="$(find elevation_mapping_demos)/config/postprocessing/rs_elevation_filter.yaml" />     
   </node>  

@@ -29,6 +29,7 @@
   <depend>std_msgs</depend>
   <depend>tf</depend>
   <depend>tf_conversions</depend>
+  <depend>image_transport</depend>
 
 <!--   <test_depend>cmake_code_coverage</test_depend> -->
   <test_depend>grid_map_filters</test_depend>

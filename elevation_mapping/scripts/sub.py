@@ -60,9 +60,9 @@ class listener(object):
         #print("entered visualization callback")
         # print(gmdata.info)
         # print("++++++++++++++++")
-        # print(gmdata.layers)
+        #print(gmdata.layers)
         # print("---------------")
-        # print(len(gmdata.layers))
+        #print(len(gmdata.layers))
         # print(gmdata.layers[11])
         # print(gmdata.layers[12])
         # print(gmdata.layers[13])
@@ -79,6 +79,11 @@ class listener(object):
         self.height_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_elevation])
         #print(self.height_map.shape)
         self.color_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_color])
+
+        # print(d[idx_color])
+        # print("-------------------------------")
+
+            
     
         #self.surface_normals_x = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[11])
         #self.surface_normals_y = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[12])

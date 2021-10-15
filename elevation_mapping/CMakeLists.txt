@@ -21,6 +21,7 @@ set(
     std_msgs
     tf
     tf_conversions
+    image_transport #added for img_msg publishing
 )
 
 find_package(catkin REQUIRED 
@@ -30,6 +31,12 @@ find_package(catkin REQUIRED
 
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
+
+find_package(OpenCV REQUIRED
+  COMPONENTS
+  opencv_highgui
+  CONFIG
+)
 
 catkin_package(
   INCLUDE_DIRS
@@ -63,6 +70,17 @@ target_link_libraries(${PROJECT_NAME}_pcl_types
   ${catkin_LIBRARIES}
 )
 
+add_executable(gm2cv
+  src/gm2cv_node.cpp
+)
+
+
+target_link_libraries(
+  gm2cv
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
 add_library(${PROJECT_NAME}_library
   src/ElevationMapping.cpp
   src/ElevationMap.cpp
@@ -78,6 +96,7 @@ add_library(${PROJECT_NAME}_library
   src/sensor_processors/LaserSensorProcessor.cpp
   src/sensor_processors/PerfectSensorProcessor.cpp
   #src/opencv_node.cpp
+  src/gm2cv_node.cpp
  
 )
 
@@ -94,6 +113,7 @@ target_link_libraries(${PROJECT_NAME}_library
 add_executable(${PROJECT_NAME}
   src/elevation_mapping_node.cpp
 )
+
 
 target_link_libraries(${PROJECT_NAME}
   ${PROJECT_NAME}_library

@@ -18,15 +18,13 @@ class image_converter:
 
   def callback(self,data):
     try:
-      cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+      cv_image = self.bridge.imgmsg_to_cv2(data, "rgba16")
     except CvBridgeError as e:
       print(e)
 
     (rows,cols,channels) = cv_image.shape
+    print(cv_image.shape)
     
-    # if cols > 60 and rows > 60 :
-    #   cv2.circle(cv_image, (50,50), 10, 255)
-
     cv2.imshow("Image window", cv_image)
     cv2.waitKey(3)
 

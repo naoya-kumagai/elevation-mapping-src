@@ -11,87 +11,51 @@ https://github.com/ANYbotics/grid_map/blob/master/grid_map_demos/src/opencv_demo
  #include <image_transport/image_transport.h>
 #include "grid_map_ros/GridMapRosConverter.hpp"
 #include <sensor_msgs/image_encodings.h>
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace grid_map;
 using namespace ros;
 
 
 image_transport::Publisher pub;
-// int main(int argc, char** argv)
-// {
-
-
-//   // Create grid map.
-//   GridMap map({"original", "elevation"});
-//   map.setFrameId("map");
-//   map.setGeometry(Length(1.2, 2.0), 0.01);
-//   ROS_INFO("Created map with size %f x %f m (%i x %i cells).",
-//     map.getLength().x(), map.getLength().y(),
-//     map.getSize()(0), map.getSize()(1));
-
-  
-//   // Convert to CV image.
-//   cv::Mat originalImage;
-//   if (useTransparency) {
-//     // Note: The template parameters have to be set based on your encoding
-//     // of the image. For 8-bit images use `unsigned char`.
-//     GridMapCvConverter::toImage<unsigned short, 4>(map, "original", CV_16UC4, 0.0, 0.3, originalImage);
-//   } else {
-//     GridMapCvConverter::toImage<unsigned short, 1>(map, "original", CV_16UC1, 0.0, 0.3, originalImage);
-//   }
-
-//   // Create OpenCV window.
-//   cv::namedWindow("OpenCV Demo");
-
-//   // Work with copy of image in a loop.
-//   while (nodeHandle.ok()) {
-
-//     // Initialize.
-//     ros::Time time = ros::Time::now();
-//     map.setTimestamp(time.toNSec());
-//     cv::Mat modifiedImage;
-//     int blurRadius = 200 - abs((int)(200.0 * sin(time.toSec())));
-//     blurRadius = blurRadius - (blurRadius % 2) + 1;
-
-//     // Apply Gaussian blur.
-//     cv::GaussianBlur(originalImage, modifiedImage, cv::Size(blurRadius, blurRadius), 0.0, 0.0);
-
-//     // Visualize as image.
-//     cv::imshow("OpenCV Demo", modifiedImage);
-//     cv::waitKey(40);
-
- 
-//   }
-
-//   return 0;
-// }
+static const std::string OPENCV_WINDOW = "Image window";
 
 void cb(const grid_map_msgs::GridMap& msg){
 
-    grid_map::GridMap map;
+  grid_map::GridMap map;
 
 
-    // cv_bridge::CvImage image;
-    sensor_msgs::Image image;
- cv_bridge::CvImage cvImage;
-    grid_map::GridMapRosConverter::fromMessage(msg, map, {"color"});
+  // cv_bridge::CvImage image;
+  sensor_msgs::Image image;
+  cv_bridge::CvImage cvImage;
+  //this seems inefficient but the gridmap to cvimage function does the same thing under the hood
+  grid_map::GridMapRosConverter::fromMessage(msg, map, {"color"});
+  grid_map::GridMapRosConverter::toCvImage(map,"color", sensor_msgs::image_encodings::RGBA16, cvImage);
 
+  ROS_INFO("Received map with size %f x %f m (%i x %i cells).",
+  map.getLength().x(), map.getLength().y(),
+  map.getSize()(0), map.getSize()(1));
 
-    grid_map::GridMapRosConverter::toCvImage(map,"color", sensor_msgs::image_encodings::BGR8, cvImage);
+  // cv::Mat originalImage;
+  // const std::string layer = "elevation";
+  // GridMapCvConverter::toImage(map, layer, sensor_msgs::image_encodings::MONO8, image);
 
-    ROS_INFO("Received map with size %f x %f m (%i x %i cells).",
-    map.getLength().x(), map.getLength().y(),
-    map.getSize()(0), map.getSize()(1));
-      const float minValue = -1.0;
-  const float maxValue = 1.0;
-
-    // cv::Mat originalImage;
-    // const std::string layer = "elevation";
-    // GridMapCvConverter::toImage(map, layer, sensor_msgs::image_encodings::MONO8, image);
-  
  
 
   cvImage.toImageMsg(image);
+  cv_bridge::CvImagePtr cv_ptr;
+ try
+    {
+      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::RGBA16);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+    }
+      cv::imshow(OPENCV_WINDOW, cv_ptr->image);
+    cv::waitKey(3);
+
   pub.publish(image);
 
     // image_pub_.publish(image.toImageMsg());

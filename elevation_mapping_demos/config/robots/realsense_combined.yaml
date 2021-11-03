@@ -4,26 +4,31 @@ robot_base_frame_id:                        cam_tracking_link
 robot_pose_with_covariance_topic:           /camera_footprint_pose
 robot_pose_cache_size:                      200
 #point_cloud_topic:                          /cam_depth/depth/color/points #/filtered_points #/camera/depth/color/points 
-track_point_frame_id:                       cam_tracking_link  #this defines how the elevation map moves
+track_point_frame_id:                       map #cam_tracking_link  #this defines how the elevation map moves 
 track_point_x:                              0.0
 track_point_y:                              0.0
 track_point_z:                              0.0
 min_update_rate:                            2.0
 time_tolerance:                             1.0
 time_offset_for_point_cloud:                0.0
-sensor_processor/ignore_points_above:       0.10 #change this
-robot_motion_map_update/covariance_scale:   0.01
+sensor_processor/ignore_points_above:       -0.35 #height of the plane + 10cm TODO: change this so to set this as a variable
+sensor_processor/ignore_points_below:       -0.45 #height of the plane 
+robot_motion_map_update/covariance_scale:   0.01 #no documentation on this
 
 # Map.
-length_in_x:                                3.0 #6.0 x and y are "flipped" 
+length_in_x:                                5.0 #6.0 x and y are "flipped" 
 length_in_y:                                2.0 #6.0
 position_x:                                 0.0
 position_y:                                 0.0
-resolution:                                 0.01 #what is the minimum resolution?? < 0.01 will cause program to hang?? 
-min_variance:                               0.0001
-max_variance:                               0.05
-mahalanobis_distance_threshold:             2.5
-multi_height_noise:                         0.001
+resolution:                                 0.005 #what is the minimum resolution?? 
+ #maybe changing this will produce a more reliable map in the x-y direction
+#min_variance:                               0.0001
+#max_variance:                               0.05 
+
+mahalanobis_distance_threshold:             2.5   #how many standard deviations away the new data has to be for it to be rejected
+#comment this out too
+#multi_height_noise:                         0.001
+max_horizontal_variance:                    0.01
 surface_normal_positive_axis:               z
 fused_map_publishing_rate:                  0.5
 enable_visibility_cleanup:                  false

@@ -6,7 +6,7 @@ postprocessor_pipeline: # set by postprocessor_pipeline_name
     params:
       input_layer: elevation
       output_layer: elevation_smooth
-      radius: 0.02
+      radius: 0.01
       
         # Compute surface normals.
   - name: surface_normals

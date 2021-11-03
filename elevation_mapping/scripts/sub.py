@@ -1,14 +1,163 @@
-#!/usr/bin/env python3
+#!/home/yusuke/miniconda3/envs/mask-rcnn/bin/python3.7
+
 
 from IPython.utils.dir2 import dir2
+from numpy.lib.shape_base import get_array_wrap
 from grid_map_msgs.msg import GridMap
 import rospy
 from std_msgs.msg import String
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
+
 import cv2
+import sys
+import os
+# ROOT_DIR = '/home/yusuke/Mask_RCNN'
+# sys.path.append(ROOT_DIR)
+# from mrcnn import utils
+# from mrcnn import visualize
+# from mrcnn.visualize import display_images
+# import mrcnn.model as modellib
+# from mrcnn.model import log
+# sys.path.append(os.path.join(ROOT_DIR, "hold"))
+# # sys.path.append(os.path.join(ROOT_DIR, "mrcnn"))
+# # from mrcnn.inference import inference_init
+# import tensorflow as tf
+# import hold
+
+import time
+from skimage.measure import find_contours
+import matplotlib.pyplot as plt
+from matplotlib import patches,  lines
+from matplotlib.patches import Polygon
+
+
 # import warnings
+
+
+# def display_instances_realtime(image, boxes, masks, class_ids, class_names,
+#                       scores=None, title="",
+#                       figsize=(16, 16), ax=None,
+#                       show_mask=True, show_bbox=True,
+#                       colors=None, captions=None):
+#     """
+#     boxes: [num_instance, (y1, x1, y2, x2, class_id)] in image coordinates.
+#     masks: [height, width, num_instances]
+#     class_ids: [num_instances]
+#     class_names: list of class names of the dataset
+#     scores: (optional) confidence scores for each box
+#     title: (optional) Figure title
+#     show_mask, show_bbox: To show masks and bounding boxes or not
+#     figsize: (optional) the size of the image
+#     colors: (optional) An array or colors to use with each object
+#     captions: (optional) A list of strings to use as captions for each object
+#     """
+#     # Number of instances
+#     N = boxes.shape[0]
+#     if not N:
+#         print("\n*** No instances to display *** \n")
+#     else:
+#         assert boxes.shape[0] == masks.shape[-1] == class_ids.shape[0]
+
+#      # Generate random colors
+#     colors = colors or visualize.random_colors(N)
+
+#     # Show area outside image boundaries.
+#     # height, width = image.shape[:2]
+#     # ax.set_ylim(height + 10, -10)
+#     # ax.set_xlim(-10, width + 10)
+#     ax.axis('off')
+#     ax.set_title(title)
+
+#     masked_image = image.astype(np.uint32).copy()
+#     for i in range(N):
+#         color = colors[i]
+
+#         # Bounding box
+#         if not np.any(boxes[i]):
+#             # Skip this instance. Has no bbox. Likely lost in image cropping.
+#             continue
+#         y1, x1, y2, x2 = boxes[i]
+#         if show_bbox:
+#             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
+#                                 alpha=0.7, linestyle="dashed",
+#                                 edgecolor=color, facecolor='none')
+#             ax.add_patch(p)
+
+#         # Label
+#         if not captions:
+#             class_id = class_ids[i]
+#             score = scores[i] if scores is not None else None
+#             label = class_names[class_id]
+#             caption = "{} {:.3f}".format(label, score) if score else label
+#         else:
+#             caption = captions[i]
+#         ax.text(x1, y1 + 8, caption,
+#                 color='w', size=11, backgroundcolor="none")
+
+#         # Mask
+#         mask = masks[:, :, i]
+#         if show_mask:
+#             masked_image =visualize.apply_mask(masked_image, mask, color)
+
+#         # Mask Polygon
+#         # Pad to ensure proper polygons for masks that touch image edges.
+#         padded_mask = np.zeros(
+#             (mask.shape[0] + 2, mask.shape[1] + 2), dtype=np.uint8)
+#         padded_mask[1:-1, 1:-1] = mask
+#         contours = find_contours(padded_mask, 0.5)
+#         for verts in contours:
+#             # Subtract the padding and flip (y, x) to (x, y)
+#             verts = np.fliplr(verts) - 1
+#             p = Polygon(verts, facecolor="none", edgecolor=color)
+#             ax.add_patch(p)
+
+#     ax.imshow(masked_image.astype(np.uint8))
+#     print('refreshed image')
+
+# def inference_init(ROOT_DIR, HOLD_DIR, subset, weights_path, DEVICE = "/gpu:0" ):
+
+#     MODEL_DIR = os.path.join(ROOT_DIR, "logs")
+#     # MODEL_WEIGHTS_PATH = ROOT_DIR +"/hold_mask_rcnn_coco.h5"
+
+#     config = hold.CustomConfig()
+#     # HOLD_DIR = ROOT_DIR+"/hold/newdata1"
+
+#     # Override the training configurations with a few
+#     # changes for inferencing.
+#     class InferenceConfig(config.__class__):
+#         # Run detection on one image at a time
+#         GPU_COUNT = 1
+#         IMAGES_PER_GPU = 1
+#         # IMAGE_RESIZE_MODE = 'none'
+#         # IMAGE_MIN_DIM = 256
+#         # IMAGE_MAX_DIM = 1024
+
+#     config = InferenceConfig()
+#     config.display()
+
+#     # set target device
+#     # DEVICE = "/gpu:0"  # /cpu:0 or /gpu:0
+
+#     dataset = hold.CustomDataset()
+#     # dataset.load_custom(HOLD_DIR, "val")
+#     dataset.load_custom(HOLD_DIR, subset)
+#     # Must call before using the dataset
+#     dataset.prepare()
+
+#     print("Images: {}\nClasses: {}".format(len(dataset.image_ids), dataset.class_names))
+
+#     # Create model in inference mode
+#     with tf.device(DEVICE):
+#         model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR,config=config)
+
+#     #weights_path = "../logs/hold20211021T0846/mask_rcnn_hold_0010.h5"
+#     # weights_path = "/content/drive/MyDrive/ColabNotebooks/logs/hold20211021T0846/mask_rcnn_hold_0010.h5"
+
+#     # Load weights
+#     print("Loading weights ", weights_path)
+#     model.load_weights(weights_path, by_name=True)
+
+#     return model, dataset, config
 
 def wrap_in_size(size_x,size_y,ind_x,ind_y):
     if ind_x<0:
@@ -46,6 +195,7 @@ class listener(object):
         self.length_y = None
         self.height_map = None #2D numpy array
         self.color_map = None
+        self.height_map_filtered = None
         # self.height_map_plane = None
 
         self.surface_normals_x = None
@@ -53,7 +203,7 @@ class listener(object):
         self.surface_normals_z = None
         rospy.init_node('listeneer', anonymous=True)
         #rospy.Subscriber("/grid_map_filter_demo/filtered_map", GridMap, self.callback)		
-        rospy.Subscriber("/elevation_mapping/elevation_map", GridMap, self.callback)		
+        rospy.Subscriber("/elevation_mapping/elevation_map_raw", GridMap, self.callback)		
         #rospy.Subscriber("/elevation_mapping_plane/elevation_map", GridMap, self.callback_plane)	
     #update the height map and the surface_normals
     def callback(self,gmdata):
@@ -66,7 +216,7 @@ class listener(object):
         # print(gmdata.layers[11])
         # print(gmdata.layers[12])
         # print(gmdata.layers[13])
-        idx_elevation = gmdata.layers.index('elevation') 
+        idx_elevation = gmdata.layers.index('elevation_smooth') 
         idx_color = gmdata.layers.index('color')
         
 
@@ -77,8 +227,11 @@ class listener(object):
         d = gmdata.data
         #print(len(d))
         self.height_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_elevation])
+        
+        #print(np.nanmin(self.height_map))
+        self.height_map_filtered = np.where(np.isnan(self.height_map), np.nanmedian(self.height_map), self.height_map)
         #print(self.height_map.shape)
-        self.color_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_color])
+        #self.color_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_color])
 
         # print(d[idx_color])
         # print("-------------------------------")
@@ -125,6 +278,48 @@ class listener(object):
     def get_height_w(self,x,y,mode=1):  #this function assumes that the robot has no rotation relative to the world frame. In this function x and y are in world frame.
         return self.get_height_r(x-self.robot_pose.position.x, y-self.robot_pose.position.y,mode)
 
+def edge_detect(ax, height_map):
+
+    gray= cv2.normalize(src=height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+
+    otsu, _ = cv2.threshold(gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    edges = cv2.Canny(gray,otsu, otsu * 2, L2gradient = True)
+        #edges = cv2.Canny(image=mask_gray, threshold1=100, threshold2=200)
+    #print (otsu)
+    contours, _ = cv2.findContours(edges,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+
+    # Applies convex hulls to each contour, ensuring each contour
+    # is a closed polygon.
+    hulls = map(cv2.convexHull,contours)
+
+
+
+
+    
+    # hulls_img = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+    # print(hulls_img.shape)
+    # cv2.drawContours(hulls_img,hulls,-1,(255,255,255),-1)
+
+    ax.imshow(edges)
+    return contours, edges 
+
+def ellipse_fit(ax, contours, edges):
+    # Draws contours onto a blank canvas
+    mask = np.zeros(edges.shape,np.uint8)
+    m3 = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+
+    print(len(contours))
+    for cnt in contours: 
+        try: 
+            ellipse = cv2.fitEllipse(cnt)
+        except Exception as e:
+            print(e)
+            continue
+        cv2.ellipse(m3, ellipse, color=(0,0,255), thickness=1)
+
+    return m3
+
+
 
 def plot_ellipse(height_map):
     '''
@@ -133,6 +328,8 @@ def plot_ellipse(height_map):
        each ellipse has length 3: [cx, cy], [b,a], angle
     '''
     # print(height_map.shape)
+
+
     mask = np.where(np.isnan(height_map), 0, 255).astype(np.uint8)
     ret, thresh = cv2.threshold(mask, 127, 255, 0)
     contours, hierarchy = cv2.findContours(thresh, 1, 2)
@@ -155,6 +352,7 @@ def plot_ellipse(height_map):
         rospy.loginfo("no ellipse detected!")
     
     return m3, ellipse_list
+
 
 def size_plotter(fig, ax, x_vec,y1_data,line1, true_value, identifier=''):
     '''
@@ -197,25 +395,27 @@ def height_map_plotter(fig, ax, height_map, cmap, first_loop):
     else:
         ax.imshow(height_map,cmap=cmap)
 
-    
-            
 
-if __name__ == '__main__':
+def online_plotting(save_map):
     plt.style.use('ggplot')
     # warnings.filterwarnings("error")
     my_listener = listener() #the height map would be a top-down view
-
-    #fig = plt.figure(figsize=(4,8))
+   
+    fig = plt.figure()
     # fig, (ax1, ax2) = plt.subplots(figsize=(4,8),nrows=1, ncols=2)
-    
+    # model, dataset, config = inference_init(ROOT_DIR=ROOT_DIR, HOLD_DIR='/home/yusuke/Mask_RCNN/hold/dataset2', 
+    #     subset='val',weights_path='/home/yusuke/Mask_RCNN/logs/mask_rcnn_hold_0010.h5')
 
-    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
-    ax1.grid()
-    ax2.grid()
-    fig.tight_layout() 
+    # fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
+    # ax1.grid()
+    # ax2.grid()
+    # ax3.grid()
+    # fig.tight_layout() 
     cmap = plt.cm.rainbow
-    cmap.set_under('gray') # set ubobserved area to -99
+    cmap.set_under('black') # set ubobserved area to -99
     cmap.set_over('white')     # set planar region to 99
+
+
 
     size = 100
     x_vec = np.linspace(0,1,size+1)[0:-1] #0.0, 0.01, 0.02, ... 0.99
@@ -226,16 +426,15 @@ if __name__ == '__main__':
     true_a = 0.05
     true_b = 0.03
     
+    i = 0
 
     while not rospy.is_shutdown():
         #rospy.sleep(0.1)
+        # rospy.loginfo('hello')
 
         if my_listener.height_map is not None: #and my_listener.height_map_plane is not None:
             
-            
-            #print('looping')
-            # plt.clf()
-
+        
             #set plane to 99 and unobserved area to -99
             # height_map_combined = np.where(np.isnan(my_listener.height_map), -99, my_listener.height_map)
             # height_map_combined = np.where((height_map_combined==-99) & (np.logical_not(np.isnan(my_listener.height_map_plane))), 99, height_map_combined)
@@ -252,52 +451,112 @@ if __name__ == '__main__':
             # fig.colorbar(cax)
 
 
-
-            # np.save("/home/yusuke/height_map.npy", my_listener.height_map)
-            # # np.save("/home/yusuke/height_map_plane.npy", my_listener.height_map_plane)
-            # print('saved npy file')
-            
-
-            height_map_plotter(fig, ax1, my_listener.height_map, cmap, first_loop)
-
-        
-            contour, ellipse_list = plot_ellipse(my_listener.height_map)
-            
-           
-            ax2.imshow(contour)
-            ax2.set_title('contour map')
-            
-            if ellipse_list != []:
-                (cx, cy), (d1, d2), angle = ellipse_list[0]
-                # cx, cy = np.array(ellipse_list[0][0], dtype=int)
-                # ellipse_axis =  ellipse_list[0][1]
-                # a = max(ellipse_axis)
-                # b = min(ellipse_axis)
-                # angle = ellipse_list[0][2]
+            if save_map:
+                # np.save("/home/yusuke/height_map.npy", my_listener.height_map)
+                # np.save("/home/yusuke/height_map_filtered.npy", my_listener.height_map_filtered)
+                # # # np.save("/home/yusuke/height_map_plane.npy", my_listener.height_map_plane)
+                # # 
+                # print('saved npy file')
+                gray= cv2.normalize(src=my_listener.height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+              
+                gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
                 
-                a = max(d1, d2) / 2 * my_listener.resolution 
-                b = min(d1, d2) / 2 * my_listener.resolution 
+                hold_num = 'SEllipsoid'
+                dataset_num = '_test3'
+                angle = ''
+                # cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/dataset{dataset_num}/hold_{hold_num}_{angle}{i}.png', gray)
+                cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/evaluation_2.5/midsize_height50cm_dist100cm_{i}.png', gray)
+                print('saved image')
 
-                y_vec[-1] = a
+           
+
+            plt.imshow(my_listener.height_map, cmap=cmap, vmin = -0.45, vmax = -0.35)
             
-            line1 = size_plotter(fig, ax3, x_vec,y_vec,line1,true_value=true_a) #updates graph
-            y_vec = np.append(y_vec[1:],0.0)   #append any value to keep y length
+            plt.colorbar()
+            
+            
+
+            # ax1.imshow(gray)
+            # print('Detecting...')
+            # time_s = time.time()
+            # results = model.detect([gray], verbose=1)
+            # time_f = time.time()
+            # print(f'Done in {time_f - time_s}!')
+            # r = results[0]
+            # display_instances_realtime(gray, r['rois'], r['masks'], r['class_ids'], 
+            #                 dataset.class_names, r['scores'], ax=ax2,
+            #                 title="Predictions")
+
+
+            #height_map_plotter(fig, ax1, my_listener.height_map_filtered, cmap, first_loop)
+
+            #contours, edges = edge_detect(ax2, my_listener.height_map_filtered)
+
+            
+            #ax2.imshow(edges)
+            #x3.imshow(mask)
+        
+            # contour, ellipse_list = plot_ellipse(my_listener.height_map)
+                      
+            # ax2.imshow(contour)
+            # ax2.set_title('contour map')
+            
+            # if ellipse_list != []:
+            #     (cx, cy), (d1, d2), angle = ellipse_list[0]
+            #     # cx, cy = np.array(ellipse_list[0][0], dtype=int)
+            #     # ellipse_axis =  ellipse_list[0][1]
+            #     # a = max(ellipse_axis)
+            #     # b = min(ellipse_axis)
+            #     # angle = ellipse_list[0][2]
+                
+            #     a = max(d1, d2) / 2 * my_listener.resolution 
+            #     b = min(d1, d2) / 2 * my_listener.resolution 
+
+            #     y_vec[-1] = a
+            
+            # line1 = size_plotter(fig, ax3, x_vec,y_vec,line1,true_value=true_a) #updates graph
+            # y_vec = np.append(y_vec[1:],0.0)   #append any value to keep y length
 
             first_loop = False
+            i += 1
             plt.pause(0.1)
-
-            
+            plt.clf()
 
         #print(my_listerner.get_height_w(-2.0,1.0,2))
         else:
             rospy.loginfo("Waiting for height map...")
-            rospy.sleep(1.0)
-        
-    #rospy.spin()
+            rospy.sleep(1.0)    
+            
+
+def offline_test():
+    # fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
+    # ax1.grid()
+    # ax2.grid()
+    # ax3.grid()
+    # fig.tight_layout() 
+    # cmap = plt.cm.rainbow
+    #height_map = np.load("/home/yusuke/height_map.npy")
+    #gray= cv2.normalize(src=height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+    gray = cv2.imread('/home/yusuke/Mask_RCNN/holds/img_30.png')
+    
+    plt.imshow(gray)
+    #height_map_plotter(fig, ax1, height_map, cmap, first_loop=True)
+
+    #contours, edges = edge_detect(ax2, height_map)
 
 
 
+    
+    # ax2.imshow(edges)
+    # ax3.imshow(mask)
+    plt.show()
 
+if __name__ == '__main__':
+    # print(os.path.dirname(sys.executable))
+    # print(sys.version)
+    # print(tf.__version__)
+    online_plotting(False)
+    #offline_test()
 
 
 

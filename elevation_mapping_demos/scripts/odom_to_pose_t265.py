@@ -21,7 +21,8 @@ class OdometryModifier:
        
         pose.pose.pose.position.x = odom.pose.pose.position.x
         pose.pose.pose.position.y = odom.pose.pose.position.y
-        pose.pose.pose.position.z = odom.pose.pose.position.z + 1.0
+        pose.pose.pose.position.z = odom.pose.pose.position.z #what is this +1.0 for???
+        print(pose.pose.pose.position)
         #pose.pose.pose.position.z = 0.1
       
         pose.pose.pose.orientation.x = odom.pose.pose.orientation.x

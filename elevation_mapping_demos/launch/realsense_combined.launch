@@ -22,6 +22,10 @@
         <!--<arg name="unite_imu_method" value="linear_interpolation"/>-->
         <arg name="unite_imu_method" value="copy"/>
         <arg name="filters" value="pointcloud"/>
+        <!--<arg name="depth_width"         value="1280"/>
+        <arg name="depth_height"        value="720"/>
+        <arg name="color_width"         value="1920"/>
+        <arg name="color_height"        value="1080"/>-->
      </include>
      
      <include file="$(find realsense2_camera)/launch/rs_t265.launch">
@@ -30,7 +34,6 @@
      </include>
      
   <node pkg="tf" type="static_transform_publisher" name="t265_to_d400" args="0.009 0.021 0.027 0.000 -0.018 0.005 /cam_tracking_pose_frame /cam_depth_link 100"/> 
-   <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_t265" args="0 0 0 0 0 0 /map /cam_tracking_pose_frame  100"/>    -->
      
  <!--<node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/>      
   <node pkg="elevation_mapping_demos" type="t265_d435_tf.py" name="t265_d435" output="screen"/>
@@ -38,12 +41,20 @@
   <node pkg="elevation_mapping_demos" type="odom_d435_tf.py" name="odom_d435_tf" output="screen"/>
   <node pkg="elevation_mapping_demos" type="odom_to_tracking_cam_pose.py" name="odom_to_tracking_cam_pose" output="screen"/>-->
 
+    <!-- RANSAC plane detection node -->
+    
+  <node pkg="lidar_basic" type="process_lidar" name="plane_detection" output="screen">
+  	<param name="input_pointcloud"  type="str" value="/cam/depth/color/points"/>
+	<param name="output_pointcloud" type="str" value="/filtered_points"/>
+  </node>
         
         
   <!-- Launch elevation mapping node. -->
   
   <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping" output="screen">
-    <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/realsense_combined.yaml" />       
+    <param name="point_cloud_topic" value="/filtered_points">
+    <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/realsense_combined.yaml" />
+    <rosparam command="load" file="$(find elevation_mapping_demos)/config/postprocessing/rs_elevation_filter.yaml" />
   </node>  
   
   <node pkg="elevation_mapping" type="sub.py" name="listener" output="screen" />

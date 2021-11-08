@@ -25,7 +25,7 @@ import os
 # import hold
 
 import time
-from skimage.measure import find_contours
+# from skimage.measure import find_contours
 import matplotlib.pyplot as plt
 from matplotlib import patches,  lines
 from matplotlib.patches import Polygon

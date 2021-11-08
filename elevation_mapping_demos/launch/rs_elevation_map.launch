@@ -50,7 +50,7 @@
     <rosparam command="load" file="$(find elevation_mapping_demos)/config/postprocessing/rs_elevation_filter.yaml" />     
   </node>  
   
-  <node pkg="elevation_mapping" type="sub.py" name="listener" output="screen" />>
+  <!--node pkg="elevation_mapping" type="sub.py" name="listener" output="screen" />-->
   
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find elevation_mapping_demos)/rviz/rs_elevation_map.rviz" />
   

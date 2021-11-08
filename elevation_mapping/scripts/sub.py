@@ -197,13 +197,15 @@ class listener(object):
         self.color_map = None
         self.height_map_filtered = None
         # self.height_map_plane = None
+        self.uncertainty_range_map = None
+        self.accumulated_height_map = None
 
         self.surface_normals_x = None
         self.surface_normals_y = None
         self.surface_normals_z = None
         rospy.init_node('listeneer', anonymous=True)
         #rospy.Subscriber("/grid_map_filter_demo/filtered_map", GridMap, self.callback)		
-        rospy.Subscriber("/elevation_mapping/elevation_map_raw", GridMap, self.callback)		
+        rospy.Subscriber("/elevation_mapping/elevation_map", GridMap, self.callback)		
         #rospy.Subscriber("/elevation_mapping_plane/elevation_map", GridMap, self.callback_plane)	
     #update the height map and the surface_normals
     def callback(self,gmdata):
@@ -216,8 +218,9 @@ class listener(object):
         # print(gmdata.layers[11])
         # print(gmdata.layers[12])
         # print(gmdata.layers[13])
-        idx_elevation = gmdata.layers.index('elevation_smooth') 
+        idx_elevation = gmdata.layers.index('elevation') 
         idx_color = gmdata.layers.index('color')
+        idx_uncertainty = gmdata.layers.index('uncertainty_range')
         
 
         self.robot_pose = gmdata.info.pose
@@ -227,9 +230,18 @@ class listener(object):
         d = gmdata.data
         #print(len(d))
         self.height_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_elevation])
-        
+        self.uncertainty_range_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_uncertainty])
+        #uncertainty_range is calculated as upper_bound - lower_bound
+        # upper_bound = elevation + 99th percentile of the "upper bound distribution"
+        # lower_bound = elevation - 1st percentile of the "lower bound distribution"
+
         #print(np.nanmin(self.height_map))
-        self.height_map_filtered = np.where(np.isnan(self.height_map), np.nanmedian(self.height_map), self.height_map)
+        #self.height_map_filtered = np.where(np.isnan(self.height_map), np.nanmedian(self.height_map), self.height_map)
+
+        # add data to accumulated height map if uncertainty range < threshold 
+
+
+
         #print(self.height_map.shape)
         #self.color_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_color])
 
@@ -242,10 +254,10 @@ class listener(object):
         #self.surface_normals_y = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[12])
         #self.surface_normals_z = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[13])
 
-    def callback_plane(self,gmdata):
-        #print('entered plane viz callback')
-        d = gmdata.data
-        self.height_map_plane = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[0])
+    # def callback_plane(self,gmdata):
+    #     #print('entered plane viz callback')
+    #     d = gmdata.data
+    #     self.height_map_plane = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[0])
 
 
     def get_height_r(self,x,y,mode=1):  #In grid_map the map frame has always no rotation relative to the world frame. In this function x and y are in the robot frame.
@@ -385,16 +397,17 @@ def size_plotter(fig, ax, x_vec,y1_data,line1, true_value, identifier=''):
     # return line so we can update it again in the next iteration
     return line1
 
-def height_map_plotter(fig, ax, height_map, cmap, first_loop):
+def height_map_plotter(fig, ax, height_map, cmap, first_loop, vmin, vmax):
     if first_loop == True:
-        pos = ax.imshow(height_map,cmap=cmap)
+        pos = ax.imshow(height_map,cmap=cmap, vmin =vmin, vmax =vmax)
         cbar = fig.colorbar(pos, ax=ax)
         #ax.set_ylabel('Y Label')
         ax.set_title('Height map')
     
     else:
-        ax.imshow(height_map,cmap=cmap)
+        ax.imshow(height_map,cmap=cmap, vmin =vmin, vmax =vmax)
 
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def online_plotting(save_map):
     plt.style.use('ggplot')
@@ -406,7 +419,7 @@ def online_plotting(save_map):
     # model, dataset, config = inference_init(ROOT_DIR=ROOT_DIR, HOLD_DIR='/home/yusuke/Mask_RCNN/hold/dataset2', 
     #     subset='val',weights_path='/home/yusuke/Mask_RCNN/logs/mask_rcnn_hold_0010.h5')
 
-    # fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
+    # fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
     # ax1.grid()
     # ax2.grid()
     # ax3.grid()
@@ -414,7 +427,7 @@ def online_plotting(save_map):
     cmap = plt.cm.rainbow
     cmap.set_under('black') # set ubobserved area to -99
     cmap.set_over('white')     # set planar region to 99
-
+    # cmap.set_bad('gray')
 
 
     size = 100
@@ -428,27 +441,19 @@ def online_plotting(save_map):
     
     i = 0
 
+            
     while not rospy.is_shutdown():
         #rospy.sleep(0.1)
         # rospy.loginfo('hello')
 
-        if my_listener.height_map is not None: #and my_listener.height_map_plane is not None:
-            
-        
-            #set plane to 99 and unobserved area to -99
-            # height_map_combined = np.where(np.isnan(my_listener.height_map), -99, my_listener.height_map)
-            # height_map_combined = np.where((height_map_combined==-99) & (np.logical_not(np.isnan(my_listener.height_map_plane))), 99, height_map_combined)
-
-            # # try:
-            # vmin=np.nanmin(my_listener.height_map)
-            # vmax=np.nanmax(my_listener.height_map)
-            # # except RuntimeWarning: 	
-            # # 	print('runtimewarning')
-            # # 	continue
-            
+        #if my_listener.height_map is not None: #and my_listener.height_map_plane is not None:
+        if my_listener.uncertainty_range_map is not None:               
 
             # cax = plt.imshow(height_map_combined, cmap=cmap, vmin = vmin, vmax=vmax)
             # fig.colorbar(cax)
+            if first_loop:
+                #initialize accumulated height map with 0s
+                my_listener.accumulated_height_map = np.zeros(my_listener.height_map.shape)
 
 
             if save_map:
@@ -468,27 +473,29 @@ def online_plotting(save_map):
                 cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/evaluation_2.5/midsize_height50cm_dist100cm_{i}.png', gray)
                 print('saved image')
 
+            #if uncertainty is less than threshold, update that part of the accumulated height map 
+
+            my_listener.accumulated_height_map = np.where(my_listener.uncertainty_range_map < 0.02, my_listener.height_map, my_listener.accumulated_height_map)
+
+            vmin = -0.415 - 0.02
+            vmax = vmin + 0.12
+
+            #plt.imshow(my_listener.height_map, cmap=cmap, vmin =vmin, vmax =vmax)
+            plt.imshow(my_listener.accumulated_height_map, cmap=cmap, vmin=vmin, vmax=vmax)
+            plt.colorbar()
+            # print(my_listener.uncertainty_range_map)
+
            
 
-            plt.imshow(my_listener.height_map, cmap=cmap, vmin = -0.45, vmax = -0.35)
-            
-            plt.colorbar()
-            
-            
-
-            # ax1.imshow(gray)
-            # print('Detecting...')
-            # time_s = time.time()
-            # results = model.detect([gray], verbose=1)
-            # time_f = time.time()
-            # print(f'Done in {time_f - time_s}!')
-            # r = results[0]
-            # display_instances_realtime(gray, r['rois'], r['masks'], r['class_ids'], 
-            #                 dataset.class_names, r['scores'], ax=ax2,
-            #                 title="Predictions")
 
 
-            #height_map_plotter(fig, ax1, my_listener.height_map_filtered, cmap, first_loop)
+
+            # height_map_plotter(fig, ax1, my_listener.height_map_filtered, cmap, first_loop, vmin, vmax)
+            # mask = np.zeros(my_listener.height_map.shape)
+            masked = np.ma.masked_where(((vmin < my_listener.height_map) & (my_listener.height_map < vmax)), my_listener.height_map)
+            
+            #
+            # ax2.imshow(masked, cmap=cmap)
 
             #contours, edges = edge_detect(ax2, my_listener.height_map_filtered)
 
@@ -519,8 +526,9 @@ def online_plotting(save_map):
 
             first_loop = False
             i += 1
-            plt.pause(0.1)
+            plt.pause(0.1) #same as plt.show(), kind of
             plt.clf()
+           
 
         #print(my_listerner.get_height_w(-2.0,1.0,2))
         else:

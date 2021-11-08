@@ -11,7 +11,8 @@ track_point_z:                              0.0
 min_update_rate:                            2.0
 time_tolerance:                             1.0
 time_offset_for_point_cloud:                0.0
-sensor_processor/ignore_points_above:       -0.35 #height of the plane + 10cm TODO: change this so to set this as a variable
+#these 2 parameters seem not to be working
+sensor_processor/ignore_points_above:       -0.30 #height of the plane + 10cm TODO: change this so to set this as a variable
 sensor_processor/ignore_points_below:       -0.45 #height of the plane 
 robot_motion_map_update/covariance_scale:   0.01 #no documentation on this
 

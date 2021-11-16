@@ -26,8 +26,11 @@
 		<arg name="color_height"        value="1080"/>
             
     </include>
+    
+  <!--<node pkg="elevation_mapping" type="add_tf.py" name="add_tf" output="screen"/-->  
 
-  <node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/> 
+  <!--node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/--> 
+  <node pkg="elevation_mapping_demos" type="tf_to_pose_publisher.py" name="tf_to_pose_publisher" output="screen"/> 
   <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0  /map /$(arg camera1)_odom_frame 100"/> 
 
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+<include file="$(find realsense2_camera)/launch/rs_camera.launch">
+	 <arg name="filters"                         value="pointcloud"/>
+</include>	 
+  <node pkg="tf" type="static_transform_publisher" name="map_to_base_link" args="0 0 0 0 0 0  /map base_link 100"/>   
+</launch>

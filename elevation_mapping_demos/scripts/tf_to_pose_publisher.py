@@ -3,6 +3,7 @@
 import rospy
 import geometry_msgs.msg
 import tf
+import time
 
 def callback(newPose):
     """Listens to a transform between from_frame and to_frame and publishes it
@@ -11,13 +12,14 @@ def callback(newPose):
 
     # Listen to transform and throw exception if the transform is not
     # available.
+    time_s = time.time()
     try:
         (trans, rot) = tf_listener.lookupTransform(
             from_frame, to_frame, rospy.Time(0))
     except (tf.LookupException, tf.ConnectivityException,
             tf.ExtrapolationException):
         return
-    print(trans)
+    #print(trans)
     # Create and fill pose message for publishing
     pose = geometry_msgs.msg.PoseWithCovarianceStamped()
     pose.header.stamp = rospy.Time(0)
@@ -40,6 +42,9 @@ def callback(newPose):
                             0, 0, 0, 0, 0, 0]
 
     publisher.publish(pose)
+    
+    time_f = time.time()
+    #print(time_f - time_s) 
 
 
 def main_program():
@@ -48,16 +53,19 @@ def main_program():
     global publisher, tf_listener, from_frame, to_frame
     rospy.init_node('tf_to_pose_publisher')
     # Read frame id's for tf listener
-    from_frame = rospy.get_param("~from_frame")
-    to_frame = rospy.get_param("~to_frame")
-    pose_name = str(to_frame) + "_pose"
+    #from_frame = rospy.get_param("~from_frame")
+    #to_frame = rospy.get_param("~to_frame")
+    #pose_name = str(to_frame) + "_pose"
+    from_frame = 'map'
+    to_frame = 'cam_tracking_pose_frame'
+    pose_name = 'camera_footprint_pose'
 
     tf_listener = tf.TransformListener()
     publisher = rospy.Publisher(
         pose_name, geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=10)
 
     # Set callback and start spinning
-    rospy.Timer(rospy.Duration(0.05), callback)
+    rospy.Timer(rospy.Duration(0.001), callback)
     rospy.spin()
 
 

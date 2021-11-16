@@ -5,6 +5,7 @@ import geometry_msgs.msg
 from nav_msgs.msg import Odometry
     
 
+
 class OdometryModifier:
 
     def __init__(self):
@@ -15,8 +16,8 @@ class OdometryModifier:
         #rospy.loginfo('odom callback!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         pose = geometry_msgs.msg.PoseWithCovarianceStamped()
         pose.header.stamp = rospy.Time(0)
-        pose.header.frame_id = 'cam_tracking_link' ####FIXME##########
-        #pose.header.frame_id = 'cam_tracking_odom_frame'  ???
+        pose.header.frame_id = 'cam_tracking_pose_frame' ####FIXME##########
+ 
         #pose.pose.pose = odom.pose.pose
        
         pose.pose.pose.position.x = odom.pose.pose.position.x

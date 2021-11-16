@@ -205,7 +205,7 @@ class listener(object):
         self.surface_normals_z = None
         rospy.init_node('listeneer', anonymous=True)
         #rospy.Subscriber("/grid_map_filter_demo/filtered_map", GridMap, self.callback)		
-        rospy.Subscriber("/elevation_mapping/elevation_map", GridMap, self.callback)		
+        rospy.Subscriber("/elevation_mapping/elevation_map_raw", GridMap, self.callback)		
         #rospy.Subscriber("/elevation_mapping_plane/elevation_map", GridMap, self.callback_plane)	
     #update the height map and the surface_normals
     def callback(self,gmdata):
@@ -219,8 +219,8 @@ class listener(object):
         # print(gmdata.layers[12])
         # print(gmdata.layers[13])
         idx_elevation = gmdata.layers.index('elevation') 
-        idx_color = gmdata.layers.index('color')
-        idx_uncertainty = gmdata.layers.index('uncertainty_range')
+        #idx_color = gmdata.layers.index('color')
+        #idx_uncertainty = gmdata.layers.index('uncertainty_range')
         
 
         self.robot_pose = gmdata.info.pose
@@ -230,7 +230,7 @@ class listener(object):
         d = gmdata.data
         #print(len(d))
         self.height_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_elevation])
-        self.uncertainty_range_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_uncertainty])
+        #self.uncertainty_range_map = translate_matrix(gmdata.outer_start_index,gmdata.inner_start_index,d[idx_uncertainty])
         #uncertainty_range is calculated as upper_bound - lower_bound
         # upper_bound = elevation + 99th percentile of the "upper bound distribution"
         # lower_bound = elevation - 1st percentile of the "lower bound distribution"
@@ -446,8 +446,8 @@ def online_plotting(save_map):
         #rospy.sleep(0.1)
         # rospy.loginfo('hello')
 
-        #if my_listener.height_map is not None: #and my_listener.height_map_plane is not None:
-        if my_listener.uncertainty_range_map is not None:               
+        if my_listener.height_map is not None: #and my_listener.height_map_plane is not None:
+        #if my_listener.uncertainty_range_map is not None:               
 
             # cax = plt.imshow(height_map_combined, cmap=cmap, vmin = vmin, vmax=vmax)
             # fig.colorbar(cax)
@@ -456,38 +456,43 @@ def online_plotting(save_map):
                 my_listener.accumulated_height_map = np.zeros(my_listener.height_map.shape)
 
 
+
+            #if uncertainty is less than threshold, update that part of the accumulated height map 
+
+            #my_listener.accumulated_height_map = np.where(my_listener.uncertainty_range_map < 0.01, my_listener.height_map, my_listener.accumulated_height_map)
+
+            #dont change!!!!
+            vmin = -0.415 - 0.05
+            vmax = vmin + 0.10
+            vmax=0
+
+            plt.grid()
+            plt.imshow(my_listener.height_map, cmap='rainbow', vmax=0)
+            
+            #plt.imshow(my_listener.accumulated_height_map, cmap=cmap, vmin=vmin, vmax=vmax)
+            plt.colorbar()
+            # print(my_listener.uncertainty_range_map)
+
+        
+
             if save_map:
                 # np.save("/home/yusuke/height_map.npy", my_listener.height_map)
                 # np.save("/home/yusuke/height_map_filtered.npy", my_listener.height_map_filtered)
                 # # # np.save("/home/yusuke/height_map_plane.npy", my_listener.height_map_plane)
                 # # 
                 # print('saved npy file')
-                gray= cv2.normalize(src=my_listener.height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+                # gray= cv2.normalize(src=my_listener.height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
               
-                gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+                # gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
                 
-                hold_num = 'SEllipsoid'
-                dataset_num = '_test3'
-                angle = ''
+                # hold_num = 'SEllipsoid'
+                # dataset_num = '_test3'
+                # angle = ''
                 # cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/dataset{dataset_num}/hold_{hold_num}_{angle}{i}.png', gray)
-                cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/evaluation_2.5/midsize_height50cm_dist100cm_{i}.png', gray)
+                np.save(f'/home/yusuke/Mask_RCNN/hold/evaluation3/hold15_dist50cm_{i}.npy', my_listener.height_map)
+                #plt.imsave(f'/home/yusuke/Mask_RCNN/hold/evaluation3/hold7_dist50cm_{i}.png', my_listener.height_map, cmap=cmap)
+                #cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/evaluation_3/hold7_dist50cm_{i}.png', gray)
                 print('saved image')
-
-            #if uncertainty is less than threshold, update that part of the accumulated height map 
-
-            my_listener.accumulated_height_map = np.where(my_listener.uncertainty_range_map < 0.02, my_listener.height_map, my_listener.accumulated_height_map)
-
-            vmin = -0.415 - 0.02
-            vmax = vmin + 0.12
-
-            #plt.imshow(my_listener.height_map, cmap=cmap, vmin =vmin, vmax =vmax)
-            plt.imshow(my_listener.accumulated_height_map, cmap=cmap, vmin=vmin, vmax=vmax)
-            plt.colorbar()
-            # print(my_listener.uncertainty_range_map)
-
-           
-
-
 
 
             # height_map_plotter(fig, ax1, my_listener.height_map_filtered, cmap, first_loop, vmin, vmax)

@@ -57,7 +57,8 @@ def main_program():
     #to_frame = rospy.get_param("~to_frame")
     #pose_name = str(to_frame) + "_pose"
     from_frame = 'map'
-    to_frame = 'cam_tracking_pose_frame'
+    #to_frame = 'cam_tracking_pose_frame'
+    to_frame = 'cam_depth_link'
     pose_name = 'camera_footprint_pose'
 
     tf_listener = tf.TransformListener()

@@ -23,7 +23,7 @@ class Visualizer:
         # self.location_x = 0
         # self.location_y = 0
         # self.location_z = 0
-
+        self.true_x = 0
         self.true_z = 0
     
     def plot_init(self):
@@ -34,7 +34,7 @@ class Visualizer:
         #if self.tf.frameExists('cam_tracking_pose_frame') and self.tf.frameExists('map'):
         try:
             t = rospy.Time(0)
-            (trans, rot) = self.tf.lookupTransform("map","cam_depth_link",  t)
+            (trans, rot) = self.tf.lookupTransform("map","cam_tracking_link",  t)
             print(trans)
             self.trans = trans
             self.latest_time = rospy.Time.now().to_sec()
@@ -75,8 +75,8 @@ class Visualizer:
         plt.clf()
         plt.ylim([-0.001, 0.001])
         plt.ylabel('error from truth (m)')
-        # plt.xlabel('time from start (s)')
-        # plt.axhline(y=0, color='r', linestyle='-')
+        plt.xlabel('time from start (s)')
+        plt.axhline(y=0, color='r', linestyle='-')
         if direction =='x':
             plt.plot(self.t_data, self.x_data)
         if direction =='y':
@@ -91,7 +91,8 @@ vis = Visualizer()
 while not rospy.is_shutdown():
 
     vis.get_tracking_tf()
-    vis.plot('z')
+    #choose x or z here
+    vis.plot('x')
     plt.pause(0.01)
     # ani = FuncAnimation(vis.fig,vis.update_plot, init_func=vis.plot_init)
 

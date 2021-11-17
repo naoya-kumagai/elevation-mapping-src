@@ -35,13 +35,12 @@ class Visualizer:
         try:
             t = rospy.Time(0)
             (trans, rot) = self.tf.lookupTransform("map","cam_depth_link",  t)
-            #print(trans)
+            print(trans)
             self.trans = trans
             self.latest_time = rospy.Time.now().to_sec()
 
 
         except:
-            #print('tf not available')
             rospy.loginfo('tf not available')
             return 
 
@@ -76,8 +75,8 @@ class Visualizer:
         plt.clf()
         plt.ylim([-0.001, 0.001])
         plt.ylabel('error from truth (m)')
-        plt.xlabel('time from start (s)')
-        plt.axhline(y=0, color='r', linestyle='-')
+        # plt.xlabel('time from start (s)')
+        # plt.axhline(y=0, color='r', linestyle='-')
         if direction =='x':
             plt.plot(self.t_data, self.x_data)
         if direction =='y':

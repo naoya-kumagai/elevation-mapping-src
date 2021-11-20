@@ -1,49 +1,53 @@
 #!/usr/bin/env python3
 
 from elevation_map_sub import listener
-from IPython.utils.dir2 import dir2
-from numpy.lib.shape_base import get_array_wrap
-from grid_map_msgs.msg import GridMap
+# from IPython.utils.dir2 import dir2
+# from numpy.lib.shape_base import get_array_wrap
+# from grid_map_msgs.msg import GridMap
 import rospy
-from std_msgs.msg import String
+# from std_msgs.msg import String
 import numpy as np
-
 import cv2
-import sys
-import os
-
-import time
-
+# import sys
+# import os
+# import time
 import matplotlib.pyplot as plt
 
-
-def height_map_plotter(fig, ax, height_map, cmap, first_loop, vmin, vmax):
-    if first_loop == True:
-        pos = ax.imshow(height_map,cmap=cmap, vmin =vmin, vmax =vmax)
-        cbar = fig.colorbar(pos, ax=ax)
+def height_map_plotter(fig, ax, height_map, resolution, cmap, first_loop, vmin, vmax):
+    extent = [0, height_map.shape[1]*resolution, 0, height_map.shape[0]*resolution]
+    if first_loop:
+        ax.grid()
+        pos = ax.imshow(height_map,cmap=cmap, vmin =vmin, vmax =vmax, extent=extent)
+        cbar = fig.colorbar(pos, ax=ax, shrink=0.5)
         #ax.set_ylabel('Y Label')
-        ax.set_title('Height map')
+        ax.set_title('Elevation map')
+        ax.set_xlabel('map width (m)')
+        ax.set_ylabel('map length (m)')
     
     else:
-        ax.imshow(height_map,cmap=cmap, vmin =vmin, vmax =vmax)
+        ax.imshow(height_map,cmap=cmap, vmin =vmin, vmax =vmax, extent=extent)
 
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+def plot_height_dist(fig, ax, height_map, first_loop):
+    if first_loop:
+        pass
+
+    ax.clear()
+    ax.set_title('Elevation distribution')
+    ax.set_ylabel('number of cells')
+    ax.set_xlabel('elevation (m)')
+    ax.set_xlim(-0.44, -0.41)
+    ax.hist(np.reshape(height_map, (-1,1)), bins = 30)
+
 
 def online_plotting(save_map):
     plt.style.use('ggplot')
-    # warnings.filterwarnings("error")
+
     my_listener = listener() #the height map would be a top-down view
-   
-    fig = plt.figure()
-    # fig, (ax1, ax2) = plt.subplots(figsize=(4,8),nrows=1, ncols=2)
+
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, constrained_layout=True)
     # model, dataset, config = inference_init(ROOT_DIR=ROOT_DIR, HOLD_DIR='/home/yusuke/Mask_RCNN/hold/dataset2', 
     #     subset='val',weights_path='/home/yusuke/Mask_RCNN/logs/mask_rcnn_hold_0010.h5')
-
-    # fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
-    # ax1.grid()
-    # ax2.grid()
-    # ax3.grid()
-    # fig.tight_layout() 
+ 
     cmap = plt.cm.rainbow
     cmap.set_under('black') # set ubobserved area to -99
     cmap.set_over('white')     # set planar region to 99
@@ -86,20 +90,17 @@ def online_plotting(save_map):
             vmax = vmin + 0.10
             vmax=0
 
-            plt.grid()
-            plt.imshow(my_listener.height_map, cmap='rainbow', vmax=0)
-            
-            #plt.imshow(my_listener.accumulated_height_map, cmap=cmap, vmin=vmin, vmax=vmax)
-            plt.colorbar()
-            # print(my_listener.uncertainty_range_map)
+            vmin = None
+            vmax = None
 
-        
+            height_map_plotter(fig, ax1, my_listener.height_map, my_listener.resolution, cmap, first_loop, vmin, vmax)
+
+            #plot_height_dist(fig, ax2, my_listener.height_map, first_loop)
+
+       
 
             if save_map:
                 # np.save("/home/yusuke/height_map.npy", my_listener.height_map)
-                # np.save("/home/yusuke/height_map_filtered.npy", my_listener.height_map_filtered)
-                # # # np.save("/home/yusuke/height_map_plane.npy", my_listener.height_map_plane)
-                # # 
                 # print('saved npy file')
                 # gray= cv2.normalize(src=my_listener.height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
               
@@ -109,7 +110,7 @@ def online_plotting(save_map):
                 # dataset_num = '_test3'
                 # angle = ''
                 # cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/dataset{dataset_num}/hold_{hold_num}_{angle}{i}.png', gray)
-                np.save(f'/home/yusuke/Mask_RCNN/hold/evaluation3/hold15_dist50cm_{i}.npy', my_listener.height_map)
+                #np.save(f'/home/yusuke/Mask_RCNN/hold/evaluation3/hold15_dist50cm_{i}.npy', my_listener.height_map)
                 #plt.imsave(f'/home/yusuke/Mask_RCNN/hold/evaluation3/hold7_dist50cm_{i}.png', my_listener.height_map, cmap=cmap)
                 #cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/evaluation_3/hold7_dist50cm_{i}.png', gray)
                 print('saved image')
@@ -117,7 +118,7 @@ def online_plotting(save_map):
 
             # height_map_plotter(fig, ax1, my_listener.height_map_filtered, cmap, first_loop, vmin, vmax)
             # mask = np.zeros(my_listener.height_map.shape)
-            masked = np.ma.masked_where(((vmin < my_listener.height_map) & (my_listener.height_map < vmax)), my_listener.height_map)
+            #masked = np.ma.masked_where(((vmin < my_listener.height_map) & (my_listener.height_map < vmax)), my_listener.height_map)
             
             #
             # ax2.imshow(masked, cmap=cmap)
@@ -152,7 +153,7 @@ def online_plotting(save_map):
             first_loop = False
             i += 1
             plt.pause(0.1) #same as plt.show(), kind of
-            plt.clf()
+            #plt.clf()
            
 
         #print(my_listerner.get_height_w(-2.0,1.0,2))

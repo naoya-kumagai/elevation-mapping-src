@@ -216,7 +216,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: false
+      Enabled: true
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: PoseWithCovariance
@@ -226,7 +226,7 @@ Visualization Manager:
       Shape: Arrow
       Topic: /camera_footprint_pose
       Unreliable: false
-      Value: false
+      Value: true
     - Class: rviz/Image
       Enabled: true
       Image Topic: /cam_depth/color/image_raw
@@ -283,9 +283,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4547964334487915
+      Pitch: 0.36979687213897705
       Target Frame: <Fixed Frame>
-      Yaw: 3.150392770767212
+      Yaw: 3.2103917598724365
     Saved: ~
 Window Geometry:
   Displays:

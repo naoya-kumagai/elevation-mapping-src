@@ -71,9 +71,10 @@ class Visualizer:
     #     self.ln.set_data(self.t_data, self.y_data)
     #     return self.ln
 
-    def plot(self, direction):
+    def plot(self, direction, y_lim = [-0.001, 0.001]):
         plt.clf()
-        plt.ylim([-0.001, 0.001])
+        plt.ylim(y_lim)
+        plt.title('localization test')
         plt.ylabel('error from truth (m)')
         plt.xlabel('time from start (s)')
         plt.axhline(y=0, color='r', linestyle='-')
@@ -92,7 +93,8 @@ while not rospy.is_shutdown():
 
     vis.get_tracking_tf()
     #choose x or z here
-    vis.plot('x')
+    # vis.plot('z', y_lim=[-0.003, 0.003])
+    vis.plot('z', y_lim=None)
     plt.pause(0.01)
     # ani = FuncAnimation(vis.fig,vis.update_plot, init_func=vis.plot_init)
 

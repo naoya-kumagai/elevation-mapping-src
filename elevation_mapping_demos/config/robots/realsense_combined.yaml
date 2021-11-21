@@ -5,8 +5,9 @@ robot_pose_with_covariance_topic:           /camera_footprint_pose
 robot_pose_cache_size:                      200
 #point_cloud_topic:                          /cam_depth/depth/color/points #/filtered_points #/camera/depth/color/points 
 track_point_frame_id:                       map #cam_tracking_link  #this defines how the elevation map moves 
-track_point_x:                              0.0 # -0.05 
-track_point_y:                              0.0 # -0.15
+
+track_point_x:                              -0.05 
+track_point_y:                              -0.15
 track_point_z:                              0.0
 min_update_rate:                            2.0
 time_tolerance:                             1.0
@@ -20,8 +21,8 @@ robot_motion_map_update/covariance_scale:   0.01 #no documentation on this
 
 # Map
 #x and y are "flipped" 
-length_in_x:                                1.5 # 0.22 
-length_in_y:                                0.5 # 0.40 
+length_in_x:                                0.22  #1.5
+length_in_y:                                0.50 #0.5
 position_x:                                 0.0
 position_y:                                 0.0
 resolution:                                 0.005 #what is the minimum resolution?? 

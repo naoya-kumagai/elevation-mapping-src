@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
 
-from numpy.core.defchararray import lower
-from numpy.lib.stride_tricks import _maybe_view_as_subclass
 from elevation_map_sub import listener
-# from IPython.utils.dir2 import dir2
-# from numpy.lib.shape_base import get_array_wrap
-# from grid_map_msgs.msg import GridMap
 import rospy
-# from std_msgs.msg import String
+from std_msgs.msg import String
 import numpy as np
 import numpy.ma as ma
 import cv2
-# import sys
-# import os
-# import time
+import sys
+import os
+import time
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.stats import norm
-import random
-#from collections import Counter
 
 def height_map_plotter(fig, ax, height_map, resolution, cmap, first_loop, vmin, vmax):
     '''
@@ -68,7 +61,7 @@ def plot_height_dist(fig, ax, height_map, first_loop, plane_height_mean, plane_h
 #     plane_height_mean = bin_edges[np.argmax(hist)]
 #     return plane_height_mean
 
-def get_plane_height_mean2(height_map, init_guess=(-0.43, 0.005, 100)):
+def get_plane_height_mean2(height_map, init_guess_mean):
     '''
     Fit the height distribution to a Gaussian using scipy.optimize
     By providing good initial guesses, the plane height can be predicted with high accuracy.
@@ -85,18 +78,20 @@ def get_plane_height_mean2(height_map, init_guess=(-0.43, 0.005, 100)):
     def gauss(x,mu,sigma,A):
         return A*np.exp(-(x-mu)**2/2/sigma**2)
 
-    # def bimodal(x,mu1,sigma1,A1,mu2,sigma2,A2):
-    #     return gauss(x,mu1,sigma1,A1)+gauss(x,mu2,sigma2,A2)
-
-    init_guess_mean = -0.43
+    #init_guess_mean = -0.43
     init_guess_std = 0.005
+
     # About 2% of the data is the plane height. 
     # This depends on terrain and the definition of x below.
     height_map_length, height_map_width = height_map.shape
     init_guess_dist = height_map_length*height_map_width*0.02
     #init_guess_dist = 100
     init_guess = (init_guess_mean, init_guess_std, init_guess_dist)
-    xmin, xmax = -0.44, -0.35
+
+    #Here, define min and max for creating histograms
+    xmin = init_guess_mean - 0.01
+    xmax = init_guess_mean + 0.10
+    #xmin, xmax = -0.44, -0.35
     x = np.linspace(xmin,xmax, 100)
     y, _ = np.histogram(height_map_data, bins=x)
     x=(x[1:]+x[:-1])/2 # for len(x)==len(y)
@@ -184,33 +179,7 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
             # except:
             #     continue
 
-            #Method 3: RANSAC TODO
           
-
-            # def ransac(image, max_iter, threshold=5):
-            #     ellipse_noise = image
-            #     data = ellipse_noise
-            #     ics = []
-            #     best_ic = 0
-            #     best_model = None
-            #     xn, yn = data.nonzero()
-            #     nzero = [(x1,y1) for x1, y1 in zip(xn, yn)]
-            #     for epoch in range(max_iter):
-            #         ic = 0
-            #         sample = random.sample(nzero, 6)
-            #         a = direct_least_square(np.array([s[0] for s in sample]), np.array([s[1] for s in sample]))
-            #         for x, y in sample:
-            #             eq = np.mat(np.vstack([x**2, x*y, y**2, x, y, 1])).T
-            #             if np.abs(np.dot(eq, a.reshape(-1,1))) <= threshold:
-            #                 ic += 1
-            #         ics.append(ic)
-            #         if ic > best_ic:
-            #             best_ic = ic
-            #             best_model = a
-            #     return a, ics
-
-
-
 
             # If ellipse is too small or too big, ignore it
             lower_thres = 0.05/ resolution 
@@ -228,6 +197,7 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
             # ax.imshow(height_inside_ctr)
             print(np.max(height_inside_ctr))
             if np.max(height_inside_ctr) < plane_height_mean + 0.02:
+
                 continue
                       
                   
@@ -262,59 +232,59 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
 
 
 
-def online_plotting(save_map):
-    plt.style.use('ggplot')
+def online_plotting(plane_height_init_guess, save_map=False):
 
+    #Start listener
     my_listener = listener() #the height map would be a top-down view
 
+    #Settings for visualization
+    plt.style.use('ggplot')
     fig, (ax1, ax2,ax3, ax4) = plt.subplots(nrows=1, ncols=4, figsize=(15,15), constrained_layout=True)
  
     cmap = plt.cm.rainbow
-    cmap.set_under('black') # set ubobserved area to -99
-    cmap.set_over('white')     # set planar region to 99
+    cmap.set_under('black') 
+    cmap.set_over('white')     
     cmap.set_bad('gray')
 
-
-    size = 100
-    x_vec = np.linspace(0,1,size+1)[0:-1] #0.0, 0.01, 0.02, ... 0.99
-    y_vec = np.zeros(len(x_vec))
-    line1 = []
+    # size = 100
+    # x_vec = np.linspace(0,1,size+1)[0:-1] #0.0, 0.01, 0.02, ... 0.99
+    # y_vec = np.zeros(len(x_vec))
+    # line1 = []
     first_loop = True
 
-    true_a = 0.05
-    true_b = 0.03
+    # true_a = 0.05
+    # true_b = 0.03
     
     i = 0
             
     while not rospy.is_shutdown():
-        #rospy.sleep(0.1)
-        # rospy.loginfo('hello')
 
-        if my_listener.height_map is not None: #and my_listener.height_map_plane is not None:
-        #if my_listener.uncertainty_range_map is not None:               
-
-            # cax = plt.imshow(height_map_combined, cmap=cmap, vmin = vmin, vmax=vmax)
-            # fig.colorbar(cax)
+        if my_listener.height_map is not None: 
+ 
             if first_loop:
                 #initialize accumulated height map with 0s
                 my_listener.accumulated_height_map = np.zeros(my_listener.height_map.shape)
 
 
-
-            #if uncertainty is less than threshold, update that part of the accumulated height map 
-
-            #my_listener.accumulated_height_map = np.where(my_listener.uncertainty_range_map < 0.01, my_listener.height_map, my_listener.accumulated_height_map)
-
             #dont change!!!!
-            vmin = -0.415 - 0.05
-            vmax = vmin + 0.20
+            # vmin = -0.415 - 0.05
+            # vmax = vmin + 0.20
+
+            #0.05 and 0.20 are defined for visualization
+
+            vmin = plane_height_init_guess - 0.05
+            vmax = plane_height_init_guess + 0.20
             
 
-            # vmin = None
-            # vmax = None
-
             height_map_plotter(fig, ax1, my_listener.height_map, my_listener.resolution, cmap, first_loop, vmin, vmax)
-            plane_height_mean = get_plane_height_mean2(my_listener.height_map)
+            #plane_height_mean = get_plane_height_mean2(my_listener.height_map)
+            
+            if first_loop: #if first loop, use the height from kinematics information as initial guess
+                plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_init_guess)
+            else: # after first loop, use the mean estimate from previous loop as initial guess
+                plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_mean)
+
+
             plot_height_dist(fig, ax2, my_listener.height_map, first_loop, plane_height_mean)
             height_map_masked = detect_from_dist(fig, ax3,my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
             mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop)
@@ -337,47 +307,11 @@ def online_plotting(save_map):
                 print('saved image')
 
 
-            # height_map_plotter(fig, ax1, my_listener.height_map_filtered, cmap, first_loop, vmin, vmax)
-            # mask = np.zeros(my_listener.height_map.shape)
-            #masked = np.ma.masked_where(((vmin < my_listener.height_map) & (my_listener.height_map < vmax)), my_listener.height_map)
-            
-            #
-            # ax2.imshow(masked, cmap=cmap)
-
-            #contours, edges = edge_detect(ax2, my_listener.height_map_filtered)
-
-            
-            #ax2.imshow(edges)
-            #x3.imshow(mask)
-        
-            # contour, ellipse_list = plot_ellipse(my_listener.height_map)
-                      
-            # ax2.imshow(contour)
-            # ax2.set_title('contour map')
-            
-            # if ellipse_list != []:
-            #     (cx, cy), (d1, d2), angle = ellipse_list[0]
-            #     # cx, cy = np.array(ellipse_list[0][0], dtype=int)
-            #     # ellipse_axis =  ellipse_list[0][1]
-            #     # a = max(ellipse_axis)
-            #     # b = min(ellipse_axis)
-            #     # angle = ellipse_list[0][2]
-                
-            #     a = max(d1, d2) / 2 * my_listener.resolution 
-            #     b = min(d1, d2) / 2 * my_listener.resolution 
-
-            #     y_vec[-1] = a
-            
-            # line1 = size_plotter(fig, ax3, x_vec,y_vec,line1,true_value=true_a) #updates graph
-            # y_vec = np.append(y_vec[1:],0.0)   #append any value to keep y length
-
             first_loop = False
             i += 1
             plt.pause(0.1) #same as plt.show(), kind of
             #plt.clf()
            
-
-        #print(my_listerner.get_height_w(-2.0,1.0,2))
         else:
             rospy.loginfo("Waiting for height map...")
             rospy.sleep(1.0)    
@@ -389,33 +323,5 @@ if __name__ == '__main__':
     # print(os.path.dirname(sys.executable))
     # print(sys.version)
     # print(tf.__version__)
-    online_plotting(False)
-    #offline_test()
-
-
-
-
-
-
-def offline_test():
-    # fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
-    # ax1.grid()
-    # ax2.grid()
-    # ax3.grid()
-    # fig.tight_layout() 
-    # cmap = plt.cm.rainbow
-    #height_map = np.load("/home/yusuke/height_map.npy")
-    #gray= cv2.normalize(src=height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-    gray = cv2.imread('/home/yusuke/Mask_RCNN/holds/img_30.png')
-    
-    plt.imshow(gray)
-    #height_map_plotter(fig, ax1, height_map, cmap, first_loop=True)
-
-    #contours, edges = edge_detect(ax2, height_map)
-
-
-
-    
-    # ax2.imshow(edges)
-    # ax3.imshow(mask)
-    plt.show()
+    plane_height_init_guess = -0.415
+    online_plotting(plane_height_init_guess=plane_height_init_guess, save_map=False)

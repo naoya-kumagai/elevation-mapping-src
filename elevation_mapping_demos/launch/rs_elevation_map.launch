@@ -34,9 +34,10 @@
 
   <!--node pkg="elevation_mapping_demos" type="odom_to_pose_t265.py" name="odom_to_pose_t265" output="screen"/-->
   <node pkg="elevation_mapping_demos" type="tf_to_pose_publisher.py" name="tf_to_pose_publisher" output="screen"/>
-  <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0  /map /$(arg camera1)_odom_frame 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 2.16 0 /map /$(arg camera1)_odom_frame 100"/>
+  <!-- PointCloud2 -->
 
-
+  <!-- <node pkg="tf" type="static_transform_publisher" name="ptcloud_to_elevationmap" args="0 0 0 0 1.0852 0  /$(arg camera1)_pose_frame /$(arg camera1)_pose_frame 100"/> -->
 
   <!-- RANSAC plane detection node. This is not perfect but better than nothing. -->
 
@@ -48,7 +49,7 @@
   <!-- Launch elevation mapping node. -->
   <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping" output="screen">
 
-    <param name="point_cloud_topic" value="/transformed_ptcloud"/>
+    <param name="point_cloud_topic" value="/$(arg camera2)/depth/color/points"/>
     <!--param name="point_cloud_topic" value="/filtered_points"/-->
 
     <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/realsense_combined.yaml" />

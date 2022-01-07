@@ -37,8 +37,6 @@
   <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0  /map /$(arg camera1)_odom_frame 100"/>
 
 
-  <!-- PointCloud2 -->
-  <node pkg="tf" type="static_transform_publisher" name="ptcloud_to_elevationmap" args="0 0 0 0 1.0852 0  /$(arg camera2)/depth/color/points /transformed_ptcloud 100"/>
 
   <!-- RANSAC plane detection node. This is not perfect but better than nothing. -->
 

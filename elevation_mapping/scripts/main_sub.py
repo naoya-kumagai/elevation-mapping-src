@@ -352,7 +352,6 @@ def online_plotting(plane_height_init_guess, save_map=False):
             height_map_masked = detect_from_dist(fig, ax3,my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
             ellipse_dict = mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop)
 
-
         
             file_path = os.path.dirname(__file__)
             path = os.path.join(file_path, "..", "..", "test.yaml")
@@ -402,7 +401,6 @@ if __name__ == '__main__':
     plane_height_init_guess= -0.415
     # plane_height_init_guess= -0.33
     online_plotting(plane_height_init_guess=plane_height_init_guess, save_map=False)
-
 
 
 

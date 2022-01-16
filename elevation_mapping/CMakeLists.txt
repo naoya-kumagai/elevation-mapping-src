@@ -124,8 +124,10 @@ target_link_libraries(${PROJECT_NAME}
 #############
 
 ########################ADDED##############################
+catkin_python_setup()
+
 catkin_install_python(
-  PROGRAMS scripts/get_submap.py scripts/sub.py
+  PROGRAMS scripts/main_2d_mapping.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

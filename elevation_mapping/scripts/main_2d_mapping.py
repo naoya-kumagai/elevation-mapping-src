@@ -1,8 +1,10 @@
-#!/usr/bin/env python3
 
-from numpy.core.defchararray import lower
-from numpy.lib.stride_tricks import _maybe_view_as_subclass
-from elevation_map_sub import listener
+
+# from numpy.core.defchararray import lower
+# from numpy.lib.stride_tricks import _maybe_view_as_subclass
+# from elevation_map_sub import listener
+import elevation_map_package.elevation_map_sub as sub
+# import elevation_map_sub
 
 import rospy
 from std_msgs.msg import String
@@ -159,6 +161,7 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
 
     if verbose:
         rospy.loginfo(f'Detected {len(contours)} contours')
+
     if first_loop:
         ax.grid()
         ax.set_title('Ellipse fitting')
@@ -289,7 +292,7 @@ import yaml
 def online_plotting(plane_height_init_guess, save_map=False):
  
 
-    my_listener = listener() #the height map would be a top-down view
+    my_listener = sub.elevation_map_listener() #the height map would be a top-down view
 
     plt.style.use('ggplot')
     fig, (ax1, ax2,ax3, ax4) = plt.subplots(nrows=1, ncols=4, figsize=(15,15), constrained_layout=True)
@@ -356,8 +359,10 @@ def online_plotting(plane_height_init_guess, save_map=False):
         
             file_path = os.path.dirname(__file__)
             path = os.path.join(file_path, "..", "..", "test.yaml")
+
+            print(rospy.time.now())
            
-            with open(path, 'a') as f:
+            with open(path, 'w') as f:
                 #print(yaml.dump(ellipse_dict, f))
                 #print(ellipse_dict)
                 yaml.safe_dump(ellipse_dict, f)

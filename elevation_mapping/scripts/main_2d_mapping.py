@@ -17,6 +17,10 @@ import os
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.stats import norm
+
+import yaml
+from datetime import datetime
+
 import random
 #from collections import Counter
 
@@ -117,9 +121,12 @@ def get_plane_height_mean2(height_map, init_guess_mean, range_min=-0.03, range_m
     y, _ = np.histogram(height_map_data, bins=x)
     x=(x[1:]+x[:-1])/2 # for len(x)==len(y)
 
-    params,cov=curve_fit(gauss,x,y,p0=init_guess)
-    #sigma=np.sqrt(cov)
-    mean = params[0]
+    try: 
+        params,cov=curve_fit(gauss,x,y,p0=init_guess)
+        #sigma=np.sqrt(cov)
+        mean = params[0]
+    except RuntimeError:
+        mean = init_guess_mean
 
     return mean
 
@@ -232,7 +239,7 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
             
 
             # If ellipse is too small or too big, ignore it
-            lower_thres = 0.05/ resolution 
+            lower_thres = 0.05/ resolution #smaller than 0.05m = 5cm 
             upper_thres = 0.2 / resolution
 
             if (a < lower_thres or a > upper_thres) and (b < lower_thres or b> upper_thres):
@@ -251,7 +258,18 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
             if np.max(height_inside_ctr) < plane_height_mean + 0.02:
                 continue
                       
-                  
+            # print(height_map_masked.shape[1])
+            # print(height_map_masked.shape[0])
+
+            # print(resolution)
+
+            #Converts coordinates to actual size in meters and relative to the robot's 
+            # initial position (middle of the grid map)
+            xc = (xc - height_map_masked.shape[1]/2)*resolution
+            yc = (height_map_masked.shape[0]/2 - yc)*resolution
+
+            # print(xc, yc)
+
             try:
                 center = (
                     int(round(xc)),
@@ -287,9 +305,8 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
         
     return ellipse_dict
 
-import yaml
 
-def online_plotting(plane_height_init_guess, save_map=False):
+def online_plotting(plane_height_init_guess=None, save_map=False):
  
 
     my_listener = sub.elevation_map_listener() #the height map would be a top-down view
@@ -334,6 +351,9 @@ def online_plotting(plane_height_init_guess, save_map=False):
             # vmin = -0.415 - 0.05
             # vmax = vmin + 0.20
 
+            if plane_height_init_guess is None:
+                plane_height_init_guess = np.nanmean(my_listener.height_map)
+
             #parameters for clear visualization of height map 
             vmin = plane_height_init_guess - 0.05
             vmax = plane_height_init_guess + 0.20
@@ -356,14 +376,13 @@ def online_plotting(plane_height_init_guess, save_map=False):
             ellipse_dict = mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop)
 
 
-        
+            t = rospy.Time.now()
             file_path = os.path.dirname(__file__)
-            path = os.path.join(file_path, "..", "..", "test.yaml")
-
-            print(rospy.time.now())
+            path = os.path.join(file_path, "..", "..", "yaml_dir", f"{t}.yaml")
+         
+            
            
             with open(path, 'w') as f:
-                #print(yaml.dump(ellipse_dict, f))
                 #print(ellipse_dict)
                 yaml.safe_dump(ellipse_dict, f)
                 print('Wrote to yaml')
@@ -406,7 +425,7 @@ if __name__ == '__main__':
     # print(tf.__version__)
     plane_height_init_guess= -0.415
     # plane_height_init_guess= -0.33
-    online_plotting(plane_height_init_guess=plane_height_init_guess, save_map=False)
+    online_plotting(plane_height_init_guess=None, save_map=False)
 
 
 

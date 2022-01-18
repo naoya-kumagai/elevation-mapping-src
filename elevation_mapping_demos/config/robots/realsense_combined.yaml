@@ -21,8 +21,8 @@ robot_motion_map_update/covariance_scale:   0.01 #no documentation on this
 
 # Map
 #x and y are "flipped" 
-length_in_x:                                1.0
-length_in_y:                                0.5
+length_in_x:                                2.0
+length_in_y:                                1.0
 position_x:                                 0.0
 position_y:                                 0.0
 resolution:                                 0.005 #what is the minimum resolution?? 

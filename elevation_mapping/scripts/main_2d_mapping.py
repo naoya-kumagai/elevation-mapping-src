@@ -67,11 +67,11 @@ def plot_height_dist(fig, ax, height_map, first_loop, plane_height_mean, range_m
         print(e)
         return
     
-    ax.axvline(plane_height_mean, color='blue', lw=3, label='Plane height mean')
-    ax.axvline(plane_height_mean+plane_height_std, color='green', lw=3, label='Plane height upper bound')
+    ax.axvline(plane_height_mean, color='blue', lw=2, label='Plane height mean')
+    ax.axvline(plane_height_mean+plane_height_std, color='green', lw=2, label='Plane height upper bound')
     x = np.linspace(xmin,xmax, 100)
     y = norm.pdf(x, plane_height_mean, plane_height_std)
-    ax.plot(x,y, lw=3, label='Gaussian fit')
+    ax.plot(x,y, lw=2, label='Gaussian fit')
     ax.legend()
 
 # def get_plane_height_mean(height_map):
@@ -84,66 +84,70 @@ def plot_height_dist(fig, ax, height_map, first_loop, plane_height_mean, range_m
 #     plane_height_mean = bin_edges[np.argmax(hist)]
 #     return plane_height_mean
 
-def get_plane_height_mean2(height_map, init_guess_mean, range_min=-0.03, range_max=0.10):
-    '''
-    Fit the height distribution to a Gaussian using scipy.optimize
-    By providing good initial guesses, the plane height can be predicted with high accuracy.
-    '''
-    # https://stackoverflow.com/questions/35990467/fit-mixture-of-two-gaussian-normal-distributions-to-a-histogram-from-one-set-of
+# def get_plane_height_mean2(height_map, init_guess_mean, range_min=-0.03, range_max=0.10):
+#     '''
+#     Fit the height distribution to a Gaussian using scipy.optimize
+#     By providing good initial guesses, the plane height can be predicted with high accuracy.
+#     '''
+#     # https://stackoverflow.com/questions/35990467/fit-mixture-of-two-gaussian-normal-distributions-to-a-histogram-from-one-set-of
 
-    #change shape and exclude nan values 
-    height_map_data = np.reshape(height_map, (-1,1))
-    height_map_data = height_map_data[~np.isnan(height_map_data)]
+#     #change shape and exclude nan values 
+#     height_map_data = np.reshape(height_map, (-1,1))
+#     height_map_data = height_map_data[~np.isnan(height_map_data)]
 
-    # A simple Gaussian fit does not work, since the bouldering hold height skews the mean to the right
-    #mean, std = norm.fit(height_map_data)
+#     # A simple Gaussian fit does not work, since the bouldering hold height skews the mean to the right
+#     #mean, std = norm.fit(height_map_data)
 
-    def gauss(x,mu,sigma,A):
-        return A*np.exp(-(x-mu)**2/2/sigma**2)
+#     def gauss(x,mu,sigma,A):
+#         return A*np.exp(-(x-mu)**2/2/sigma**2)
 
-    # def bimodal(x,mu1,sigma1,A1,mu2,sigma2,A2):
-    #     return gauss(x,mu1,sigma1,A1)+gauss(x,mu2,sigma2,A2)
+#     # def bimodal(x,mu1,sigma1,A1,mu2,sigma2,A2):
+#     #     return gauss(x,mu1,sigma1,A1)+gauss(x,mu2,sigma2,A2)
 
-    # init_guess_mean = -0.43
-    init_guess_std = 0.005
-    # About 2% of the data is the plane height. 
-    # This depends on terrain and the definition of x below. 
-    # This does not seem to make a big effect on the height estimation.
-    height_map_length, height_map_width = height_map.shape
-    init_guess_dist = height_map_length*height_map_width*0.02
-    #init_guess_dist = 100
-    init_guess = (init_guess_mean, init_guess_std, init_guess_dist)
-    # xmin, xmax = -0.44, -0.35
+#     # init_guess_mean = -0.43
+#     init_guess_std = 0.005
+#     # About 2% of the data is the plane height. 
+#     # This depends on terrain and the definition of x below. 
+#     # This does not seem to make a big effect on the height estimation.
+#     height_map_length, height_map_width = height_map.shape
+#     init_guess_dist = height_map_length*height_map_width*0.02
+#     #init_guess_dist = 100
+#     init_guess = (init_guess_mean, init_guess_std, init_guess_dist)
+#     # xmin, xmax = -0.44, -0.35
 
-    #Changing these parameters will make the plane estimation more tolerant to the initial guess error
-    xmin = init_guess_mean + range_min 
-    xmax = init_guess_mean + range_max
+#     #Changing these parameters will make the plane estimation more tolerant to the initial guess error
+#     xmin = init_guess_mean + range_min 
+#     xmax = init_guess_mean + range_max
 
-    x = np.linspace(xmin,xmax, 100)
-    y, _ = np.histogram(height_map_data, bins=x)
-    x=(x[1:]+x[:-1])/2 # for len(x)==len(y)
+#     x = np.linspace(xmin,xmax, 100)
+#     y, _ = np.histogram(height_map_data, bins=x)
+#     x=(x[1:]+x[:-1])/2 # for len(x)==len(y)
 
-    try: 
-        params,cov=curve_fit(gauss,x,y,p0=init_guess)
-        #sigma=np.sqrt(cov)
-        mean = params[0]
-    except RuntimeError:
-        mean = init_guess_mean
+#     try: 
+#         params,cov=curve_fit(gauss,x,y,p0=init_guess)
+#         #sigma=np.sqrt(cov)
+#         mean = params[0]
+#     except RuntimeError:
+#         mean = init_guess_mean
 
    
-    # print(f'Mean predicted by Ransac: {mean}')
+#     # print(f'Mean predicted by Ransac: {mean}')
     
-    return mean
+#     return mean
 
-def get_plane_height_mean3(height_map, ransac):
+def get_plane_height_mean3(height_map, init_guess_mean,ransac):
       #change shape and exclude nan values 
     height_map_data = np.reshape(height_map, (-1,1))
     height_map_data = height_map_data[~np.isnan(height_map_data)]
 
-    X = np.zeros([len(height_map_data),1])
-   
-    ransac.fit(X, height_map_data)
-    mean = ransac.predict([[0,]])
+    try: 
+        X = np.zeros([len(height_map_data),1])
+    
+        ransac.fit(X, height_map_data)
+        mean = ransac.predict([[0,]])
+
+    except ValueError:
+        mean = init_guess_mean
 
     return mean
 
@@ -253,16 +257,16 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
             #             best_model = a
             #     return a, ics
             
+            # Some heuristics for eliminating falsely detected objects
             
-
             # If ellipse is too small or too big, ignore it
             lower_thres = 0.05/ resolution #smaller than 0.05m = 5cm 
             upper_thres = 0.2 / resolution
 
             if (a < lower_thres or a > upper_thres) and (b < lower_thres or b> upper_thres):
                 
-                if verbose:
-                    rospy.loginfo('Eliminated contour that is too small')
+                # if verbose:
+                #     rospy.loginfo('Eliminated contour that is too small')
                 continue
             
             # https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
@@ -272,7 +276,14 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
             height_inside_ctr = np.where(cimg==255, height_map_masked, np.NINF)
             # ax.imshow(height_inside_ctr)
             
-            if np.max(height_inside_ctr) < plane_height_mean + 0.02:
+            # if np.nanmax(height_inside_ctr) < plane_height_mean + 0.02:
+            #     continue
+
+            if verbose:
+                print(f'height inside ctr: {np.ma.masked_invalid(height_inside_ctr).mean()}' )
+            
+
+            if np.ma.masked_invalid(height_inside_ctr).mean() < plane_height_mean + 0.01:
                 continue
                       
             # print(height_map_masked.shape[1])
@@ -282,9 +293,13 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
 
             #Converts coordinates to actual size in meters and relative to the robot's 
             # initial position (middle of the grid map)
-            xc = (xc - height_map_masked.shape[1]/2)*resolution
-            yc = (height_map_masked.shape[0]/2 - yc)*resolution
+            # xc = (xc - height_map_masked.shape[1]/2)*resolution
+            # yc = (height_map_masked.shape[0]/2 - yc)*resolution
 
+            xc_actual = xc*resolution
+            yc_actual = yc*resolution
+
+       
             # print(xc, yc)
 
             try:
@@ -300,7 +315,7 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
                 continue
             
             
-            ellipse = {'Center_coordinates': [xc, yc], 'Axis_lengths': [a*resolution, b*resolution], 'Theta': theta}
+            ellipse = {'Center_coordinates(cm)': [xc_actual*100, yc_actual*100], 'Axis_lengths(cm)': [a*resolution*100, b*resolution*100], 'Theta(degrees)': theta}
 
             ellipse_dict[ellipse_num] = ellipse
             ellipse_num += 1           
@@ -319,6 +334,9 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
      
     else:
         rospy.loginfo("no ellipse detected!")
+
+    if verbose:
+        print(ellipse_dict)
         
     return ellipse_dict
 
@@ -346,6 +364,7 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
     i = 0
 
     ransac_regressor = RANSACRegressor()
+    plane_height_mean = None
 
    
             
@@ -356,14 +375,9 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
 
             # cax = plt.imshow(height_map_combined, cmap=cmap, vmin = vmin, vmax=vmax)
             # fig.colorbar(cax)
-            if first_loop:
-                #initialize accumulated height map with 0s
-                my_listener.accumulated_height_map = np.zeros(my_listener.height_map.shape)
-
-
-
-                
-
+            # if first_loop:
+            #     #initialize accumulated height map with 0s
+            #     my_listener.accumulated_height_map = np.zeros(my_listener.height_map.shape)
 
 
             #if uncertainty is less than threshold, update that part of the accumulated height map 
@@ -375,16 +389,26 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
             # vmax = vmin + 0.20
 
             if plane_height_init_guess is None:
-                plane_height_init_guess = np.nanmean(my_listener.height_map)
+                try: 
+                    plane_height_init_guess = np.nanmean(my_listener.height_map)
+                except:
+                    plane_height_init_guess = 0 
+
 
             #parameters for clear visualization of height map 
-            vmin = plane_height_init_guess - 0.05
-            vmax = plane_height_init_guess + 0.20
+            range_min = -0.05
+            range_max = 0.10
 
-            #parameters for plane height estimation range
-            range_min = -0.10
-            range_max = 0.20
+
+            if plane_height_mean is None: 
+                vmin = plane_height_init_guess + range_min
+                vmax = plane_height_init_guess + range_max
             
+            else:
+                vmin = plane_height_mean + range_min
+                vmax = plane_height_mean + range_max
+
+        
 
             height_map_plotter(fig, ax1, my_listener.height_map, my_listener.resolution, cmap, first_loop, vmin, vmax)
 
@@ -393,25 +417,25 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
             # else: # after first loop, use estimation from previous loop as initial guess
             #     plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_mean, range_min=range_min, range_max=range_max)
 
-            plane_height_mean = get_plane_height_mean3(my_listener.height_map, ransac=ransac_regressor)
+            plane_height_mean = get_plane_height_mean3(my_listener.height_map, plane_height_init_guess, ransac=ransac_regressor)
 
             print(f'Plane height estimate: {plane_height_mean}')
             
             plot_height_dist(fig, ax2, my_listener.height_map, first_loop, plane_height_mean, range_min=range_min, range_max=range_max)
             height_map_masked = detect_from_dist(fig, ax3,my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
-            ellipse_dict = mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop)
+            ellipse_dict = mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop, verbose=True)
 
 
             t = rospy.Time.now()
             file_path = os.path.dirname(__file__)
             path = os.path.join(file_path, "..", "..", "yaml_dir", f"{t}.yaml")
          
-            
+        
            
             with open(path, 'w') as f:
                 #print(ellipse_dict)
                 yaml.safe_dump(ellipse_dict, f)
-                print('Wrote to yaml')
+                print(f'Wrote to {t}.yaml')
 
 
             if save_map:

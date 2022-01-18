@@ -1,2 +1,2 @@
 *.bag
-./yaml_dir/*
+yaml_dir/*

@@ -8,3 +8,7 @@
  
  '''
  
+1642480910767342567.yaml corresponds to screenshot
+
+Current problems:
+- the object contour gets buried in the background 

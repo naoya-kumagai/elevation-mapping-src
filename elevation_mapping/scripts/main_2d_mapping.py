@@ -9,13 +9,12 @@ import elevation_map_package.elevation_map_sub as sub
 import rospy
 from std_msgs.msg import String
 import numpy as np
-import numpy.ma as ma
 import cv2
 import sys
 import os
 # import time
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
+# from scipy.optimize import curve_fit
 from scipy.stats import norm
 
 import yaml
@@ -23,8 +22,6 @@ from datetime import datetime
 
 from sklearn.linear_model import RANSACRegressor
 
-import random
-#from collections import Counter
 
 def height_map_plotter(fig, ax, height_map, resolution, cmap, first_loop, vmin, vmax):
     '''
@@ -58,8 +55,11 @@ def plot_height_dist(fig, ax, height_map, first_loop, plane_height_mean, range_m
 
     xmin = plane_height_mean + range_min 
     xmax = plane_height_mean + range_max
-
-    ax.set_xlim(xmin,xmax)
+ 
+    try:
+        ax.set_xlim(xmin,xmax)
+    except:
+        pass
 
     try:
         ax.hist(np.reshape(height_map, (-1,1)), bins = 100)
@@ -313,9 +313,17 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
                 )
             except ValueError: 
                 continue
+
+            print(np.ma.masked_invalid(height_inside_ctr).max())
+            print(plane_height_mean[0])
+
+            ellipsoid_height = (np.ma.masked_invalid(height_inside_ctr).max() - plane_height_mean[0])
+            ellipsoid_height = float(ellipsoid_height)
+
+          
             
-            
-            ellipse = {'Center_coordinates(cm)': [xc_actual*100, yc_actual*100], 'Axis_lengths(cm)': [a*resolution*100, b*resolution*100], 'Theta(degrees)': theta}
+            ellipse = {'Center_coordinates(cm)': [xc_actual*100, yc_actual*100], 'Axis_lengths(cm)': [a*resolution*100, b*resolution*100], 
+            'Theta(degrees)': theta, 'Height(cm)': ellipsoid_height*100}
 
             ellipse_dict[ellipse_num] = ellipse
             ellipse_num += 1           

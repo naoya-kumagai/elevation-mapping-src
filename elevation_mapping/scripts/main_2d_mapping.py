@@ -21,6 +21,8 @@ from scipy.stats import norm
 import yaml
 from datetime import datetime
 
+from sklearn.linear_model import RANSACRegressor
+
 import random
 #from collections import Counter
 
@@ -127,6 +129,21 @@ def get_plane_height_mean2(height_map, init_guess_mean, range_min=-0.03, range_m
         mean = params[0]
     except RuntimeError:
         mean = init_guess_mean
+
+   
+    # print(f'Mean predicted by Ransac: {mean}')
+    
+    return mean
+
+def get_plane_height_mean3(height_map, ransac):
+      #change shape and exclude nan values 
+    height_map_data = np.reshape(height_map, (-1,1))
+    height_map_data = height_map_data[~np.isnan(height_map_data)]
+
+    X = np.zeros([len(height_map_data),1])
+   
+    ransac.fit(X, height_map_data)
+    mean = ransac.predict([[0,]])
 
     return mean
 
@@ -328,6 +345,8 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
 
     i = 0
 
+    ransac_regressor = RANSACRegressor()
+
    
             
     while not rospy.is_shutdown():
@@ -340,6 +359,10 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
             if first_loop:
                 #initialize accumulated height map with 0s
                 my_listener.accumulated_height_map = np.zeros(my_listener.height_map.shape)
+
+
+
+                
 
 
 
@@ -364,10 +387,13 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
             
 
             height_map_plotter(fig, ax1, my_listener.height_map, my_listener.resolution, cmap, first_loop, vmin, vmax)
-            if first_loop: #if first koop, use information from kinematics as initial guess
-                plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_init_guess, range_min=range_min, range_max=range_max)
-            else: # after first loop, use estimation from previous loop as initial guess
-                plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_mean, range_min=range_min, range_max=range_max)
+
+            # if first_loop: #if first koop, use information from kinematics as initial guess
+            #     plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_init_guess, range_min=range_min, range_max=range_max)
+            # else: # after first loop, use estimation from previous loop as initial guess
+            #     plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_mean, range_min=range_min, range_max=range_max)
+
+            plane_height_mean = get_plane_height_mean3(my_listener.height_map, ransac=ransac_regressor)
 
             print(f'Plane height estimate: {plane_height_mean}')
             

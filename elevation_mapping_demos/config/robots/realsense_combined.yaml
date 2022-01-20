@@ -6,8 +6,8 @@ robot_pose_cache_size:                      200
 #point_cloud_topic:                          /cam_depth/depth/color/points #/filtered_points #/camera/depth/color/points 
 track_point_frame_id:                       map #cam_tracking_link  #this defines how the elevation map moves 
 
-track_point_x:                              -0.05 
-track_point_y:                              -0.15
+track_point_x:                              0.0 
+track_point_y:                              0.0
 track_point_z:                              0.0
 min_update_rate:                            2.0
 time_tolerance:                             1.0

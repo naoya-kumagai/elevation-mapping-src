@@ -177,6 +177,9 @@ def detect_from_dist(fig, ax, height_map, plane_height_mean, resolution, cmap, f
     
     return height_map_masked
 
+def detect_from_edges():
+    pass
+
 def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, first_loop, verbose=False):
     '''
     Fits ellipses to mask 

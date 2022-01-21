@@ -1,8 +1,5 @@
+#! /usr/bin/env python
 
-
-# from numpy.core.defchararray import lower
-# from numpy.lib.stride_tricks import _maybe_view_as_subclass
-# from elevation_map_sub import listener
 import elevation_map_package.elevation_map_sub as sub
 # import elevation_map_sub
 
@@ -135,21 +132,78 @@ def plot_height_dist(fig, ax, height_map, first_loop, plane_height_mean, range_m
     
 #     return mean
 
-def get_plane_height_mean3(height_map, init_guess_mean,ransac):
-      #change shape and exclude nan values 
-    height_map_data = np.reshape(height_map, (-1,1))
-    height_map_data = height_map_data[~np.isnan(height_map_data)]
+import pyransac3d
 
-    try: 
-        X = np.zeros([len(height_map_data),1])
+def get_plane_height_mean3(height_map, resolution, init_guess_mean,ransac):
+    '''
+    Use the RANSAC algorithm to estimate the plane
+    Robust to outliers compared to least squared fitting    
+    '''
+
+    extent = [0, height_map.shape[1]*resolution, 0, height_map.shape[0]*resolution]
+    height_map_shape = height_map.shape
+    height_map_ylen, height_map_xlen = height_map_shape
+
+    xgrid, ygrid = np.meshgrid(np.linspace(0, height_map_xlen*resolution, height_map_xlen), 
+                        np.linspace(0, height_map_ylen*resolution, height_map_ylen), indexing='xy')
+
+    assert(xgrid.shape == height_map_shape)
+
+    xyz = np.stack((xgrid, ygrid, height_map), axis=2)
+    print(xyz.shape)
+
+
     
-        ransac.fit(X, height_map_data)
-        mean = ransac.predict([[0,]])
+    #change shape and exclude nan values 
+    height_map_data = np.reshape(height_map, (-1,1))
+    # height_map_data = height_map_data[~np.isnan(height_map_data)]
+    
+    # try: 
+    #     X = np.zeros([len(height_map_data),1])
+    
+    #     ransac.fit(, height_map_data)
+    #     mean = ransac.predict([[0,]])
 
-    except ValueError:
-        mean = init_guess_mean
+    #     inlier_mask = ransac.inlier_mask_
+    #     print(height_map_shape)
+    #     print(inlier_mask.shape)
+    #     inlier_mask = np.reshape(inlier_mask, height_map_shape)
+    #     print('Inlier mask')
+    #     print(inlier_mask)
 
-    return mean
+    #     converge_flag = True
+
+    # except ValueError as e:
+    #     print(e)
+    #     mean = init_guess_mean
+
+    #     converge_flag = False
+
+    ########################################################
+
+    # try: 
+    #     X = np.zeros([len(height_map_data),1])
+    
+    #     ransac.fit(X, height_map_data)
+    #     mean = ransac.predict([[0,]])
+
+    #     inlier_mask = ransac.inlier_mask_
+    #     print(height_map_shape)
+    #     print(inlier_mask.shape)
+    #     inlier_mask = np.reshape(inlier_mask, height_map_shape)
+    #     print('Inlier mask')
+    #     print(inlier_mask)
+
+    #     converge_flag = True
+
+    # except ValueError as e:
+    #     print(e)
+    #     mean = init_guess_mean
+
+    #     converge_flag = False
+
+    # return mean
+    return 0
 
 
 def detect_from_dist(fig, ax, height_map, plane_height_mean, resolution, cmap, first_loop, vmin, vmax):
@@ -177,8 +231,107 @@ def detect_from_dist(fig, ax, height_map, plane_height_mean, resolution, cmap, f
     
     return height_map_masked
 
-def detect_from_edges():
-    pass
+def detect_from_edges(fig,axes,  height_map, plane_height_mean, resolution, cmap, first_loop, vmin, vmax):
+    extent = [0, height_map.shape[1]*resolution, 0, height_map.shape[0]*resolution]
+
+    ax1, ax2 = axes
+
+
+    # height_map_binary = np.where(np.isnan(height_map), 0, 255).astype(np.uint8)
+    # print('Height map')
+    # print(height_map)
+
+    # def create_gray_cm(height_map):
+    #     '''
+        
+    #     '''
+    #     min_height = np.ma.masked_invalid(height_map).min()
+    #     max_height = np.ma.masked_invalid(height_map).max()
+    #     range = max_height - min_height
+    #     print(range)
+    #     scale = 255 / range
+    #     print((np.where(np.ma.masked_invalid(height_map), 1, 0).min()))
+    #     gray_cm = np.where(np.ma.masked_invalid(height_map), (height_map - min_height)*scale, 0.0)
+    #     gray_cm = gray_cm.astype(int)
+    #     # print(gray_cm)
+
+    #     print(gray_cm.shape)
+    #     print(gray_cm.min())
+    #     print(gray_cm.max())
+
+    #     return gray_cm
+
+    
+    # gray_cm = create_gray_cm(height_map)
+    # gray_cm = np.zeros_like(height_map, dtype=np.uint8).copy()
+    # height_map *= -1
+
+    #Set values that are too low or high to the plane height
+    height_map = np.where(height_map > plane_height_mean+0.15, plane_height_mean, height_map)
+    height_map = np.where(height_map < plane_height_mean-0.05, plane_height_mean, height_map)
+
+    #set the unobserved regions to the plane height
+    height_map = np.where(np.isnan(height_map), plane_height_mean, height_map)
+
+    #get min and max values
+    min_height = np.min(height_map)
+    max_height = np.max(height_map)
+    # print(min_height, max_height)
+    range = max_height - min_height
+    # print(max_height - min_height)
+
+    height_map_normalized = cv2.normalize(height_map, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+    # print(np.min(height_map_normalized))
+    # print(np.max(height_map_normalized))
+
+    plane_height_normalized = int((plane_height_mean - min_height) / range * 255)
+    plane_height_ub_normalized = int((plane_height_mean+0.05 - min_height) / range * 255)
+    # print(plane_height_normalized)
+    # print(type(plane_height_normalized))
+   #  height_map_normalized = np.where(height_map_normalized==0, 0, height_map_normalized)
+
+
+    blurred = cv2.GaussianBlur(height_map_normalized, (3,3), 0)
+    print(blurred)
+
+    #pixels below lower threshold are discarded
+    #pixels between lower and higher threshold are considered only if they are connected to pixels in upper thres
+
+    # edge = cv2.Canny(blurred, )
+
+    # Utilize Canny Edge Detector
+    edged = cv2.Canny(blurred, plane_height_normalized, plane_height_ub_normalized)
+
+    # wide = auto_canny(height_map_normalized, 0.35)
+    # tight = auto_canny(height_map_normalized, 0.95)
+    
+
+    if first_loop:
+        ax1.grid()
+        ax2.grid()
+
+    # ax.imshow(height_map_normalized)
+
+
+    ax1.imshow(blurred)
+    ax2.imshow(edged)
+        
+
+
+# def auto_canny(image, sigma = 0.35):
+#     # compute the mediam of the single channel pixel intensities
+#     v = np.median(image)
+
+#     # apply automatic Canny edge detection using the computed median
+#     lower = int(max(0, (1.0 - sigma) * v))
+#     upper = int(min(255, (1.0 + sigma) *v))
+#     edged = cv2.Canny(image, lower, upper)
+
+#     # return edged image
+#     return edged
+
+    
+    
 
 def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, first_loop, verbose=False):
     '''
@@ -428,13 +581,16 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
             # else: # after first loop, use estimation from previous loop as initial guess
             #     plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_mean, range_min=range_min, range_max=range_max)
 
-            plane_height_mean = get_plane_height_mean3(my_listener.height_map, plane_height_init_guess, ransac=ransac_regressor)
+            plane_height_mean = get_plane_height_mean3(my_listener.height_map,my_listener.resolution, plane_height_init_guess, ransac=ransac_regressor)
 
             print(f'Plane height estimate: {plane_height_mean}')
             
             plot_height_dist(fig, ax2, my_listener.height_map, first_loop, plane_height_mean, range_min=range_min, range_max=range_max)
-            height_map_masked = detect_from_dist(fig, ax3,my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
-            ellipse_dict = mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop, verbose=True)
+
+            height_map_gray = detect_from_edges(fig, (ax3, ax4), my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
+
+            # height_map_masked = detect_from_dist(fig, ax3,my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
+            # ellipse_dict = mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop, verbose=True)
 
 
             t = rospy.Time.now()
@@ -443,10 +599,10 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
          
         
            
-            with open(path, 'w') as f:
-                #print(ellipse_dict)
-                yaml.safe_dump(ellipse_dict, f)
-                print(f'Wrote to {t}.yaml')
+            # with open(path, 'w') as f:
+            #     #print(ellipse_dict)
+            #     yaml.safe_dump(ellipse_dict, f)
+            #     print(f'Wrote to {t}.yaml')
 
 
             if save_map:

@@ -1,2 +1,6 @@
 *.bag
 yaml_dir/*
+venv
+*.pkl
+*.zip
+.ipynb_checkpoints

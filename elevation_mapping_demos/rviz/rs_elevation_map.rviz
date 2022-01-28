@@ -110,7 +110,7 @@ Visualization Manager:
         cam_tracking_pose_frame:
           Value: true
         map:
-          Value: false
+          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF

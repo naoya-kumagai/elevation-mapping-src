@@ -30,6 +30,9 @@
   <depend>tf</depend>
   <depend>tf_conversions</depend>
   <depend>image_transport</depend>
+  <depend>python-pyransac3d</depend>
+  <depend>geometry_msgs</depend>
+ 
 
 <!--   <test_depend>cmake_code_coverage</test_depend> -->
   <test_depend>grid_map_filters</test_depend>

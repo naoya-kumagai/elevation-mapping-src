@@ -36,7 +36,11 @@
   <node pkg="elevation_mapping_demos" type="tf_to_pose_publisher.py" name="tf_to_pose_publisher" output="screen"/>
 
   <!--The climbing wall is tilted by -tan(67/156) = 1.057 rad but somehow 1.15 works the best -->
-  <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0 /map /$(arg camera1)_odom_frame 100"/>
+
+  <!--node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0 /map /$(arg camera1)_odom_frame 100"/-->
+
+  <node pkg="elevation_mapping" type="tf_pub.py" name="tf2_broadcater" output="screen"/>
+
   <!-- PointCloud2 -->
 
   <!-- <node pkg="tf" type="static_transform_publisher" name="ptcloud_to_elevationmap" args="0 0 0 0 1.0852 0  /$(arg camera1)_pose_frame /$(arg camera1)_pose_frame 100"/> -->

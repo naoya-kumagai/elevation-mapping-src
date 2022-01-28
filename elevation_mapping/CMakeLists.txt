@@ -21,11 +21,13 @@ set(
     std_msgs
     tf
     tf_conversions
+    geometry_msgs
     image_transport #added for img_msg publishing
 )
 
 find_package(catkin REQUIRED 
   COMPONENTS
+  geometry_msgs
     ${CATKIN_PACKAGE_DEPENDENCIES}
 )
 
@@ -45,6 +47,7 @@ catkin_package(
   LIBRARIES
     ${PROJECT_NAME}_library
   CATKIN_DEPENDS
+    geometry_msgs
     ${CATKIN_PACKAGE_DEPENDENCIES}
   DEPENDS
     Boost
@@ -127,7 +130,7 @@ target_link_libraries(${PROJECT_NAME}
 catkin_python_setup()
 
 catkin_install_python(
-  PROGRAMS scripts/main_2d_mapping.py
+  PROGRAMS scripts/main_2d_mapping.py scripts/tf_pub.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -1,10 +1,8 @@
 #! /usr/bin/env python
 
 import elevation_map_package.elevation_map_sub as sub
-# import elevation_map_sub
 
 import rospy
-from std_msgs.msg import String
 import numpy as np
 import cv2
 import sys
@@ -132,7 +130,7 @@ def plot_height_dist(fig, ax, height_map, first_loop, plane_height_mean, range_m
     
 #     return mean
 
-import pyransac3d
+#import pyransac3d
 
 def get_plane_height_mean3(height_map, resolution, init_guess_mean,ransac):
     '''
@@ -504,14 +502,73 @@ def mask_to_ellipse(fig, ax, height_map_masked, resolution, plane_height_mean, f
         
     return ellipse_dict
 
+import tf
+from geometry_msgs.msg import Point, Pose, Quaternion
+from rospy.numpy_msg import numpy_msg
+from nav_msgs.msg import Odometry
+import tf2_ros
+import geometry_msgs.msg
+from std_msgs.msg import Bool
+
+import pyransac3d
+from scipy.spatial.transform import Rotation as R
+import std_srvs
+import tf_conversions
+
+
+def get_plane_equation(plane_model, height_map, RESOLUTION, verbose=False):
+    xgrid, ygrid = np.meshgrid(np.linspace(0, height_map.shape[1]*RESOLUTION, height_map.shape[1]), np.linspace(0, height_map.shape[0]*RESOLUTION, height_map.shape[0]))
+    xyz = np.zeros((np.size(xgrid), 3))
+    xyz[:,0] = np.reshape(xgrid, -1)
+    xyz[:,1] = np.reshape(ygrid, -1)
+    xyz[:,2] = np.reshape(height_map, -1)
+    # plane = pyransac3d.Plane()
+    best_eq, best_inliers = plane_model.fit(xyz, 0.01)
+    if best_eq:
+        best_eq = np.array(best_eq)
+        if best_eq[3] < 0:
+            best_eq *= -1
+    else:    
+        rospy.loginfo('Plane estimation not successful. Returning NAN coeffs')
+        return None
+
+    a,b,c,d = best_eq
+
+    if verbose: 
+        print('Got plane estimate')
+        print(f'Equation of plane: {a:.2f} x + {b:.2f} y + {c:.2f} z + {d:.2f} = 0')
+
+    # rmat = get_rotation_mat([a,b,c])
+    # xyz_rotated = np.dot(xyz, rmat.T)
+    # assert(xyz.shape==xyz_rotated.shape)
+    # [a,b,c,d], best_inliers = plane_model.fit(xyz_rotated, 0.01)
+    # if verbose:
+    #     print(f'Equation of transformed plane: {a:.2f} x + {b:.2f} y + {c:.2f} z + {d:.2f} = 0')
+    return np.array([a,b,c,d])
+
+def get_rotation_mat(M):
+    # https://stackoverflow.com/questions/9423621/3d-rotations-of-a-plane
+    N = (0,0,1)
+    c = np.dot(M,N)
+    x,y,z = np.cross(M,N) / np.linalg.norm(np.cross(M,N))
+    s = np.sqrt(1 - c*c)
+    C = 1 - c
+    rmat = np.array([[ x*x*C+c,    x*y*C-z*s,  x*z*C+y*s ],
+                    [ y*x*C+z*s,  y*y*C+c,    y*z*C-x*s ],
+                    [ z*x*C-y*s,  z*y*C+x*s,  z*z*C+c   ]])
+    return rmat
+
+
 
 def online_plotting(plane_height_init_guess=None, save_map=False):
- 
+    
+    odom_pub = rospy.Publisher("plane_tf_info", Odometry, queue_size=10)
+    plane_flag_pub = rospy.Publisher('plane_converge_info', Bool, queue_size=1)
 
     my_listener = sub.elevation_map_listener() #the height map would be a top-down view
 
     plt.style.use('ggplot')
-    fig, (ax1, ax2,ax3, ax4) = plt.subplots(nrows=1, ncols=4, figsize=(15,15), constrained_layout=True)
+    fig, ((ax1,ax2,ax3), (ax4, ax5, ax6))  = plt.subplots(nrows=2, ncols=3, figsize=(15,15), constrained_layout=True)
  
     cmap = plt.cm.rainbow
     cmap.set_under('black') # set ubobserved area to -99
@@ -526,13 +583,25 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
     first_loop = True
 
     i = 0
+    np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
-    ransac_regressor = RANSACRegressor()
+    # ransac_regressor = RANSACRegressor()
     plane_height_mean = None
 
-   
-            
+    import time
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    height_maps = []        
+
+    coeffs_stack_len = 10
+    coeffs_stack = np.zeros((coeffs_stack_len, 4))
+    plane_converge_flag = False
+    plane_model = pyransac3d.Plane()
+
     while not rospy.is_shutdown():
+
+        # odom = Odometry()
+        # odom.pose.pose = Pose(Point(0,0,0), Quaternion(0,0,0,1))
+        # odom_pub.publish(odom)
 
         if my_listener.height_map is not None: #and my_listener.height_map_plane is not None:
         #if my_listener.uncertainty_range_map is not None:               
@@ -573,21 +642,88 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
                 vmax = plane_height_mean + range_max
 
         
+            # height_maps.append(my_listener.height_map)
+            # import pickle
+            # with open(f'map-{timestr}.pkl','wb') as f:
+            #     pickle.dump(height_maps, f)
+
+
+
+            # print(my_listener.height_map[0][0])
+            
+
+            coeffs = get_plane_equation(plane_model, my_listener.height_map, my_listener.resolution)
+            if coeffs is None:
+                i-=1
+                continue
+            coeffs_stack[i%coeffs_stack_len] = coeffs
+            print(coeffs_stack[:,0])
+            ax5.clear()
+            # ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,0], label='a')
+            # ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,1], label='b')
+            # ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,2], label='c')
+            # ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,3], label='d')
+
+            ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,0], label='a')
+            ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,1], label='b')
+            ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,2], label='c')
+            ax5.plot([j for j in range(coeffs_stack_len)], coeffs_stack[:,3], label='d')
+
+            ax5.legend()
+
+
+    
+            coeffs_var = np.var(coeffs_stack, axis=0)
+            print('Variance of coefficients')
+            print(coeffs_var)
+            if i>coeffs_stack_len and np.all(coeffs_var < 0.001):
+                plane_converge_flag = True
+            
+            # if plane_converge_flag:
+            # print(f'Plane estimation is stable')
+            coeffs_mean = np.mean(coeffs_stack, axis=0)
+            rmat = get_rotation_mat(coeffs_mean[:-1])
+            pos_z = coeffs_mean[-1]
+
+            q = R.from_matrix(rmat).as_quat()
+
+            print(pos_z)
+            print(q)
+
+            odom = Odometry()
+            odom.header.stamp = rospy.Time.now()
+            odom.pose.pose = Pose(Point(0,0,pos_z), Quaternion(*q))
+
+            odom_pub.publish(odom)
+
+            plane_flag_pub.publish(plane_converge_flag)
+            
+            #Change reference frame to plane-down view. Consequently, clear the map. 
+            # my_listener.height_map.fill(np.nan)
+            # rospy.ServiceProxy('/elevation_mapping/clear_map', std_srvs.srv.Empty())
+            # print('successfully cleared map')
+
+
+            # else:
+            #     print(f'Not stable')
+
+        
+            
+
 
             height_map_plotter(fig, ax1, my_listener.height_map, my_listener.resolution, cmap, first_loop, vmin, vmax)
-
-            # if first_loop: #if first koop, use information from kinematics as initial guess
-            #     plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_init_guess, range_min=range_min, range_max=range_max)
-            # else: # after first loop, use estimation from previous loop as initial guess
-            #     plane_height_mean = get_plane_height_mean2(my_listener.height_map, init_guess_mean=plane_height_mean, range_min=range_min, range_max=range_max)
-
-            plane_height_mean = get_plane_height_mean3(my_listener.height_map,my_listener.resolution, plane_height_init_guess, ransac=ransac_regressor)
-
-            print(f'Plane height estimate: {plane_height_mean}')
             
-            plot_height_dist(fig, ax2, my_listener.height_map, first_loop, plane_height_mean, range_min=range_min, range_max=range_max)
+          
+            # plane_height_mean = get_plane_height_mean3(my_listener.height_map,my_listener.resolution, plane_height_init_guess, ransac=ransac_regressor)
 
-            height_map_gray = detect_from_edges(fig, (ax3, ax4), my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
+            # print(f'Plane height estimate: {plane_height_mean}')
+            
+            # plot_height_dist(fig, ax2, my_listener.height_map, first_loop, plane_height_mean, range_min=range_min, range_max=range_max)
+
+            # height_map_gray = detect_from_edges(fig, (ax3, ax4), my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
+
+
+
 
             # height_map_masked = detect_from_dist(fig, ax3,my_listener.height_map, plane_height_mean, my_listener.resolution, cmap, first_loop, vmin, vmax)
             # ellipse_dict = mask_to_ellipse(fig, ax4, height_map_masked, my_listener.resolution, plane_height_mean, first_loop, verbose=True)
@@ -603,23 +739,6 @@ def online_plotting(plane_height_init_guess=None, save_map=False):
             #     #print(ellipse_dict)
             #     yaml.safe_dump(ellipse_dict, f)
             #     print(f'Wrote to {t}.yaml')
-
-
-            if save_map:
-                # np.save("/home/yusuke/height_map.npy", my_listener.height_map)
-                # print('saved npy file')
-                # gray= cv2.normalize(src=my_listener.height_map, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-              
-                # gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-                
-                # hold_num = 'SEllipsoid'
-                # dataset_num = '_test3'
-                # angle = ''
-                # cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/dataset{dataset_num}/hold_{hold_num}_{angle}{i}.png', gray)
-                #np.save(f'/home/yusuke/Mask_RCNN/hold/evaluation3/hold15_dist50cm_{i}.npy', my_listener.height_map)
-                #plt.imsave(f'/home/yusuke/Mask_RCNN/hold/evaluation3/hold7_dist50cm_{i}.png', my_listener.height_map, cmap=cmap)
-                #cv2.imwrite(f'/home/yusuke/Mask_RCNN/hold/evaluation_3/hold7_dist50cm_{i}.png', gray)
-                print('saved image')
 
 
 
